@@ -43,9 +43,18 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
     useEffect(() => {
         setLocalCustomer(customer);
     }, [customer]);
+    
+    const formatDate = (dateInput: Date | string | undefined) => {
+        if (!dateInput) return '---';
+        const date = new Date(dateInput);
+        if (isNaN(date.getTime())) {
+            return '---';
+        }
+        return date.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
+    };
 
     const { userInfo, totalSpent, lastBookingDate } = localCustomer;
-    
+
     const handleTogglePaidStatus = async (booking: Booking) => {
         if (booking.isPaid) {
             await dataService.markBookingAsUnpaid(booking.id);
@@ -142,7 +151,8 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <KPICard title={t('admin.crm.lifetimeValue')} value={`$${totalSpent.toFixed(2)}`} />
                 <KPICard title={t('admin.crm.totalClassesBooked')} value={totalClassesBooked} />
-                <KPICard title={t('admin.crm.lastBooking')} value={lastBookingDate.toLocaleDateString(language)} />
+                {/* FIX: Cannot find name 'y'. Used lastBookingDate directly. */}
+                <KPICard title={t('admin.crm.lastBooking')} value={formatDate(lastBookingDate)} />
                 <KPICard title={t('admin.crm.noShowRate')} value={noShowRate} />
             </div>
             
@@ -303,7 +313,7 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {paidBookings.map(b => (
                                     <tr key={b.id}>
-                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{new Date(b.createdAt).toLocaleDateString(language)}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(b.createdAt)}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-sm text-right font-semibold text-brand-text">${b.price.toFixed(2)}</td>
                                     </tr>
@@ -333,7 +343,7 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                         <tbody className="bg-white divide-y divide-gray-200">
                             {localCustomer.bookings.map(b => (
                                 <tr key={b.id}>
-                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{new Date(b.createdAt).toLocaleDateString(language)}</td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(b.createdAt)}</td>
                                     <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td>
                                     <td className="px-4 py-2 whitespace-nowrap text-sm font-mono text-brand-secondary">{b.bookingCode || '---'}</td>
                                     <td className="px-4 py-2 whitespace-nowrap text-sm text-right font-semibold text-brand-text">${b.price.toFixed(2)}</td>

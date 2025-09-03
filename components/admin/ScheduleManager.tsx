@@ -403,7 +403,10 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ initialDate, o
                                             {isToday && showTimeIndicator && instructorIndex === 0 && (
                                                 <div className="absolute inset-x-0" style={{ top: `${progressPercent}%`, zIndex: 10 }} aria-hidden="true">
                                                     <div className="relative h-px bg-red-500">
-                                                        <div className="absolute -left-1 -top-1 w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                                                        <div className="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-red-500"></div>
+                                                        <div className="absolute left-2 -top-2.5 text-xs font-bold text-red-600 bg-white/80 backdrop-blur-sm px-1 rounded">
+                                                            {now.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' })}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
