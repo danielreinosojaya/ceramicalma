@@ -1,0 +1,429 @@
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Chart from 'chart.js/auto';
+import type { Booking, Product, PaymentDetails, AdminTab } from '../../types';
+import * as dataService from '../../services/dataService';
+import { useLanguage } from '../../context/LanguageContext';
+import { AcceptPaymentModal } from './AcceptPaymentModal';
+import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
+import { UserIcon } from '../icons/UserIcon';
+
+
+type FilterPeriod = 'today' | 'week' | 'month' | 'custom';
+type FinancialTab = 'summary' | 'pending' | 'capacity';
+
+interface NavigationState {
+    tab: AdminTab;
+    targetId: string;
+}
+interface FinancialDashboardProps {
+    bookings: Booking[];
+    onDataChange: () => void;
+    setNavigateTo: React.Dispatch<React.SetStateAction<NavigationState | null>>;
+}
+
+const getDatesForPeriod = (period: FilterPeriod, customRange: { start: string, end: string }): { startDate: Date, endDate: Date } => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let endDate = new Date(today);
+    endDate.setHours(23, 59, 59, 999);
+
+    let startDate = new Date(today);
+
+    switch (period) {
+        case 'today':
+            break;
+        case 'week':
+            // Week starts on Sunday
+            const dayOfWeek = today.getDay();
+            startDate.setDate(today.getDate() - dayOfWeek);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+        case 'month':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+        case 'custom':
+            startDate = customRange.start ? new Date(customRange.start + 'T00:00:00') : new Date(0);
+            endDate = customRange.end ? new Date(customRange.end + 'T23:59:59') : new Date();
+            break;
+    }
+    return { startDate, endDate };
+};
+
+const KPICard: React.FC<{ title: string; value: string | number; subtext?: string; }> = ({ title, value, subtext }) => (
+    <div className="bg-brand-background p-4 rounded-lg">
+        <h3 className="text-sm font-semibold text-brand-secondary">{title}</h3>
+        <p className="text-3xl font-bold text-brand-text mt-1">{value}</p>
+        {subtext && <p className="text-xs text-brand-secondary mt-1">{subtext}</p>}
+    </div>
+);
+
+const CapacityHealthView: React.FC = () => {
+    const { t } = useLanguage();
+    const [metrics, setMetrics] = useState({ totalCapacity: 0, bookedSlots: 0 });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchMetrics = async () => {
+            const fetchedMetrics = await dataService.getFutureCapacityMetrics(30);
+            setMetrics(fetchedMetrics);
+            setLoading(false);
+        };
+        fetchMetrics();
+    }, []);
+
+    const occupancy = metrics.totalCapacity > 0 ? (metrics.bookedSlots / metrics.totalCapacity) * 100 : 0;
+    
+    let progressBarColor = 'bg-green-500';
+    if (occupancy > 85) {
+        progressBarColor = 'bg-red-500';
+    } else if (occupancy > 60) {
+        progressBarColor = 'bg-yellow-500';
+    }
+
+    if (loading) {
+        return <div>Loading capacity data...</div>;
+    }
+
+    return (
+      <div className="animate-fade-in">
+        <p className="text-brand-secondary mb-6">{t('admin.financialDashboard.capacityHealth.subtitle')}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <KPICard title={t('admin.financialDashboard.capacityHealth.totalCapacity')} value={metrics.totalCapacity} />
+          <KPICard title={t('admin.financialDashboard.capacityHealth.bookedSlots')} value={metrics.bookedSlots} />
+          <KPICard title={t('admin.financialDashboard.capacityHealth.occupancyRate')} value={`${occupancy.toFixed(1)}%`} />
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="font-bold text-brand-text mb-2">{t('admin.financialDashboard.capacityHealth.occupancyRate')}</h3>
+            <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden">
+                <div 
+                    className={`${progressBarColor} h-4 rounded-full transition-all duration-500 ease-out`} 
+                    style={{ width: `${occupancy}%` }}
+                ></div>
+            </div>
+            <div className="flex justify-between text-xs font-semibold text-gray-500 mt-1">
+                <span>0%</span>
+                <span>50%</span>
+                <span>100%</span>
+            </div>
+        </div>
+      </div>
+    );
+};
+
+export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings: allBookings, onDataChange, setNavigateTo }) => {
+    const { t, language } = useLanguage();
+    const [activeTab, setActiveTab] = useState<FinancialTab>('summary');
+
+    // State for Summary Tab
+    const [summaryPeriod, setSummaryPeriod] = useState<FilterPeriod>('month');
+    const [summaryCustomRange, setSummaryCustomRange] = useState({ start: '', end: '' });
+    
+    // State for Pending Tab
+    const [pendingPeriod, setPendingPeriod] = useState<FilterPeriod>('month');
+    const [pendingCustomRange, setPendingCustomRange] = useState({ start: '', end: '' });
+
+    // State for payment modal
+    const [bookingToPay, setBookingToPay] = useState<Booking | null>(null);
+
+    const summaryBookings = useMemo(() => {
+        const { startDate, endDate } = getDatesForPeriod(summaryPeriod, summaryCustomRange);
+        return allBookings.filter(b => {
+            // Filter by payment date if available, otherwise creation date
+            const relevantDate = b.paymentDetails ? new Date(b.paymentDetails.receivedAt) : new Date(b.createdAt);
+            return b.isPaid && relevantDate >= startDate && relevantDate <= endDate;
+        });
+    }, [summaryPeriod, summaryCustomRange, allBookings]);
+
+     const pendingBookings = useMemo(() => {
+        const { startDate, endDate } = getDatesForPeriod(pendingPeriod, pendingCustomRange);
+        return allBookings.filter(b => {
+            if (b.isPaid) {
+                return false;
+            }
+            // Check if any slot date falls within the selected period
+            return b.slots.some(slot => {
+                const slotDate = new Date(slot.date + 'T00:00:00'); // Treat date as local midnight
+                return slotDate >= startDate && slotDate <= endDate;
+            });
+        }).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    }, [pendingPeriod, pendingCustomRange, allBookings]);
+
+
+    const kpis = useMemo(() => {
+        const totalRevenue = summaryBookings.reduce((sum, b) => sum + b.price, 0);
+        const paidBookingsCount = summaryBookings.length;
+        const avgRevenue = paidBookingsCount > 0 ? totalRevenue / paidBookingsCount : 0;
+
+        const packageRevenue = summaryBookings.reduce((acc, b) => {
+            if (!b.product) return acc;
+            acc[b.product.name] = (acc[b.product.name] || 0) + b.price;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const topPackage = Object.entries(packageRevenue).sort((a, b) => b[1] - a[1])[0];
+
+        const paymentMethodRevenue = summaryBookings.reduce((acc, b) => {
+            const method = b.paymentDetails?.method || 'Manual';
+            acc[method] = (acc[method] || 0) + b.price;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const topMethod = Object.entries(paymentMethodRevenue).sort((a,b) => b[1] - a[1])[0];
+
+        return {
+            totalRevenue: `$${totalRevenue.toFixed(2)}`,
+            paidBookingsCount,
+            avgRevenue: `$${avgRevenue.toFixed(2)}`,
+            topPackageName: topPackage ? topPackage[0] : 'N/A',
+            topPackageRevenue: topPackage ? `$${topPackage[1].toFixed(2)}` : '',
+            topMethodName: topMethod ? topMethod[0] : 'N/A',
+        };
+    }, [summaryBookings]);
+
+    // Chart logic
+    const lineChartRef = useRef<HTMLCanvasElement>(null);
+    const doughnutChartRef = useRef<HTMLCanvasElement>(null);
+    const paymentMethodChartRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        const lineCtx = lineChartRef.current?.getContext('2d');
+        const doughnutCtx = doughnutChartRef.current?.getContext('2d');
+        const paymentMethodCtx = paymentMethodChartRef.current?.getContext('2d');
+
+        if (!lineCtx || !doughnutCtx || !paymentMethodCtx || activeTab !== 'summary') return;
+        
+        Chart.getChart(lineChartRef.current)?.destroy();
+        Chart.getChart(doughnutChartRef.current)?.destroy();
+        Chart.getChart(paymentMethodChartRef.current)?.destroy();
+
+        // Line Chart Data
+        const revenueByDate = summaryBookings.reduce((acc, b) => {
+            const date = (b.paymentDetails ? new Date(b.paymentDetails.receivedAt) : new Date(b.createdAt)).toISOString().split('T')[0];
+            acc[date] = (acc[date] || 0) + b.price;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        const sortedDates = Object.keys(revenueByDate).sort();
+        
+        new Chart(lineCtx, {
+            type: 'line', data: {
+                labels: sortedDates.map(d => new Date(d + 'T12:00:00').toLocaleDateString(language, { month: 'short', day: 'numeric' })),
+                datasets: [{ label: t('admin.financialDashboard.totalRevenue'), data: sortedDates.map(date => revenueByDate[date]), borderColor: '#D95F43', backgroundColor: '#D95F4333', fill: true, tension: 0.3 }]
+            }
+        });
+
+        // Doughnut Chart Data - Revenue by Package
+        const revenueByPackage = summaryBookings.reduce((acc, b) => {
+            if (!b.product) return acc;
+            acc[b.product.name] = (acc[b.product.name] || 0) + b.price;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        new Chart(doughnutCtx, {
+            type: 'doughnut', data: {
+                labels: Object.keys(revenueByPackage),
+                datasets: [{ data: Object.values(revenueByPackage), backgroundColor: ['#D95F43', '#8896A6', '#414141', '#F7F5F2', '#C8A18F'], borderColor: '#fff', borderWidth: 2 }]
+            }, options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Doughnut Chart Data - Revenue by Payment Method
+        const paymentMethodData = summaryBookings.reduce((acc, b) => {
+            const method = b.paymentDetails?.method || 'Manual';
+            acc[method] = (acc[method] || 0) + b.price;
+            return acc;
+        }, {} as Record<string, number>);
+
+        new Chart(paymentMethodCtx, {
+            type: 'doughnut', data: {
+                labels: Object.keys(paymentMethodData),
+                datasets: [{ data: Object.values(paymentMethodData), backgroundColor: ['#8896A6', '#D95F43', '#414141', '#C8A18F'], borderColor: '#fff', borderWidth: 2 }]
+            }, options: { responsive: true, maintainAspectRatio: false }
+        });
+
+    }, [summaryBookings, language, t, activeTab]);
+
+    const exportToCSV = () => {
+        const headers = [t('admin.financialDashboard.date'), t('admin.financialDashboard.customer'), t('admin.financialDashboard.package'), t('admin.financialDashboard.amount')];
+        const rows = summaryBookings.map(b => [
+            new Date(b.createdAt).toLocaleString(language),
+            `${b.userInfo?.firstName} ${b.userInfo?.lastName}`,
+            b.product?.name || 'N/A',
+            b.price.toFixed(2)
+        ]);
+
+        let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\r\n" + rows.map(e => e.join(",")).join("\r\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "financial_report.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    const handleAcceptPaymentClick = (booking: Booking) => {
+        setBookingToPay(booking);
+    };
+
+    const handleConfirmPayment = async (details: Omit<PaymentDetails, 'receivedAt'>) => {
+        if (bookingToPay) {
+            await dataService.markBookingAsPaid(bookingToPay.id, details);
+            setBookingToPay(null);
+            onDataChange();
+        }
+    };
+    
+    const TabButton: React.FC<{ isActive: boolean, onClick: () => void, children: React.ReactNode }> = ({ isActive, onClick, children }) => (
+      <button
+        onClick={onClick}
+        className={`px-1 py-4 text-sm font-semibold border-b-2 ${isActive ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+      >
+        {children}
+      </button>
+    );
+
+    return (
+        <div>
+            {bookingToPay && (
+                <AcceptPaymentModal
+                    isOpen={!!bookingToPay}
+                    onClose={() => setBookingToPay(null)}
+                    onConfirm={handleConfirmPayment}
+                    booking={bookingToPay}
+                />
+            )}
+            
+            <h2 className="text-2xl font-serif text-brand-text mb-2">{t('admin.financialDashboard.title')}</h2>
+            
+            <div className="border-b border-gray-200 mb-6">
+                <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                    <TabButton isActive={activeTab === 'summary'} onClick={() => setActiveTab('summary')}>
+                        {t('admin.financialDashboard.incomeSummaryTab')}
+                    </TabButton>
+                    <TabButton isActive={activeTab === 'pending'} onClick={() => setActiveTab('pending')}>
+                        {t('admin.financialDashboard.pendingPreservationsTab')}
+                    </TabButton>
+                    <TabButton isActive={activeTab === 'capacity'} onClick={() => setActiveTab('capacity')}>
+                        {t('admin.financialDashboard.capacityHealthTab')}
+                    </TabButton>
+                </nav>
+            </div>
+
+            {activeTab === 'summary' && (
+                <div className="animate-fade-in">
+                    <p className="text-brand-secondary mb-6">{t('admin.financialDashboard.subtitle')}</p>
+                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-2 flex-wrap">
+                        <button onClick={() => setSummaryPeriod('today')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${summaryPeriod === 'today' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.today')}</button>
+                        <button onClick={() => setSummaryPeriod('week')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${summaryPeriod === 'week' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.thisWeek')}</button>
+                        <button onClick={() => setSummaryPeriod('month')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${summaryPeriod === 'month' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.thisMonth')}</button>
+                        <div className="flex items-center gap-2">
+                            <input type="date" value={summaryCustomRange.start} onChange={e => {setSummaryCustomRange(c => ({...c, start: e.target.value})); setSummaryPeriod('custom');}} className="text-sm p-1 border rounded-md"/>
+                            <span className="text-sm">to</span>
+                            <input type="date" value={summaryCustomRange.end} onChange={e => {setSummaryCustomRange(c => ({...c, end: e.target.value})); setSummaryPeriod('custom');}} className="text-sm p-1 border rounded-md"/>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                         <KPICard title={t('admin.financialDashboard.totalRevenue')} value={kpis.totalRevenue} />
+                         <KPICard title={t('admin.financialDashboard.paidBookings')} value={kpis.paidBookingsCount} />
+                         <KPICard title={t('admin.financialDashboard.avgRevenue')} value={kpis.avgRevenue} />
+                         <KPICard title={t('admin.financialDashboard.topPackage')} value={kpis.topPackageName} subtext={kpis.topPackageRevenue} />
+                         <KPICard title={t('admin.financialDashboard.topMethod')} value={kpis.topMethodName} />
+                    </div>
+
+                    {summaryBookings.length > 0 ? (
+                        <>
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
+                                <h3 className="font-bold text-brand-text mb-2">{t('admin.financialDashboard.revenueOverTime')}</h3>
+                                <canvas ref={lineChartRef}></canvas>
+                            </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"><h3 className="font-bold text-brand-text mb-2">{t('admin.financialDashboard.revenueByPackage')}</h3><div className="relative h-64"><canvas ref={doughnutChartRef}></canvas></div></div>
+                                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"><h3 className="font-bold text-brand-text mb-2">{t('admin.financialDashboard.revenueByPaymentMethod')}</h3><div className="relative h-64"><canvas ref={paymentMethodChartRef}></canvas></div></div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-brand-text">{t('admin.financialDashboard.detailedReport')}</h3><button onClick={exportToCSV} className="text-sm font-semibold bg-brand-primary text-white py-1 px-3 rounded-md hover:bg-brand-accent transition-colors">{t('admin.financialDashboard.exportCSV')}</button></div>
+                                <div className="overflow-x-auto"><table className="min-w-full divide-y divide-gray-200"><thead className="bg-brand-background"><tr><th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.date')}</th><th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.customer')}</th><th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.package')}</th><th className="px-4 py-2 text-right text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.amount')}</th></tr></thead><tbody className="bg-white divide-y divide-gray-200">{summaryBookings.map(b => (<tr key={b.id}><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{new Date(b.createdAt).toLocaleDateString(language)}</td><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.userInfo?.firstName} {b.userInfo?.lastName}</td><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text text-right font-semibold">${b.price.toFixed(2)}</td></tr>))}</tbody></table></div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200"><p className="text-brand-secondary">{t('admin.financialDashboard.noData')}</p></div>
+                    )}
+                </div>
+            )}
+            {activeTab === 'pending' && (
+                 <div className="animate-fade-in">
+                    <p className="text-brand-secondary mb-6">{t('admin.financialDashboard.pendingSubtitle')}</p>
+                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-2 flex-wrap">
+                        <button onClick={() => setPendingPeriod('today')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${pendingPeriod === 'today' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.today')}</button>
+                        <button onClick={() => setPendingPeriod('week')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${pendingPeriod === 'week' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.thisWeek')}</button>
+                        <button onClick={() => setPendingPeriod('month')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${pendingPeriod === 'month' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.thisMonth')}</button>
+                        <div className="flex items-center gap-2">
+                            <input type="date" value={pendingCustomRange.start} onChange={e => {setPendingCustomRange(c => ({...c, start: e.target.value})); setPendingPeriod('custom');}} className="text-sm p-1 border rounded-md"/>
+                            <span className="text-sm">to</span>
+                            <input type="date" value={pendingCustomRange.end} onChange={e => {setPendingCustomRange(c => ({...c, end: e.target.value})); setPendingPeriod('custom');}} className="text-sm p-1 border rounded-md"/>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                         <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-brand-background">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.pendingTable.date')}</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.pendingTable.customer')}</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.pendingTable.product')}</th>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.pendingTable.amount')}</th>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.pendingTable.actions')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {pendingBookings.length > 0 ? pendingBookings.map(b => (
+                                        <tr key={b.id}>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{new Date(b.createdAt).toLocaleDateString(language)}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">
+                                                <div className="font-semibold">{b.userInfo?.firstName} {b.userInfo?.lastName}</div>
+                                                <div className="text-xs text-brand-secondary">{b.userInfo?.email}</div>
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text text-right font-semibold">${b.price.toFixed(2)}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button 
+                                                        onClick={() => setNavigateTo({ tab: 'customers', targetId: b.userInfo.email })}
+                                                        title="View Customer Profile"
+                                                        className="flex items-center gap-1.5 bg-gray-100 text-gray-800 text-xs font-bold py-1 px-2.5 rounded-md hover:bg-gray-200 transition-colors"
+                                                    >
+                                                        <UserIcon className="w-4 h-4" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleAcceptPaymentClick(b)}
+                                                        className="flex items-center gap-1.5 bg-green-100 text-green-800 text-xs font-bold py-1 px-2.5 rounded-md hover:bg-green-200 transition-colors"
+                                                    >
+                                                        <CurrencyDollarIcon className="w-4 h-4" />
+                                                        {t('admin.financialDashboard.pendingTable.acceptPayment')}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={5} className="text-center py-10 text-brand-secondary">
+                                                {t('admin.financialDashboard.pendingTable.noPending')}
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                 </div>
+            )}
+             {activeTab === 'capacity' && <CapacityHealthView />}
+        </div>
+    );
+};
