@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import * as dataService from '../../services/dataService';
 import { CogIcon } from '../icons/CogIcon';
-import type { ConfirmationMessage, ClassCapacity, CapacityMessageSettings, CapacityThreshold, UITexts, FooterInfo, AutomationSettings } from '../../types';
+import type { ConfirmationMessage, ClassCapacity, CapacityMessageSettings, CapacityThreshold, UITexts, FooterInfo, AutomationSettings, BankDetails } from '../../types';
 import { DocumentTextIcon } from '../icons/DocumentTextIcon';
 import { SparklesIcon } from '../icons/SparklesIcon';
+import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
 
 const SettingsInputField: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string }> = ({ label, ...props }) => (
     <div>
@@ -115,6 +116,54 @@ const CommunicationAutomationManager: React.FC = () => {
                 >
                     {t('admin.settingsManager.automation.saveButton')}
                 </button>
+            </div>
+        </div>
+    );
+};
+
+const BankDetailsEditor: React.FC = () => {
+    const { t } = useLanguage();
+    const [details, setDetails] = useState<BankDetails | null>(null);
+    const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        const fetchDetails = async () => setDetails(await dataService.getBankDetails());
+        fetchDetails();
+    }, []);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (!details) return;
+        const { name, value } = e.target;
+        setDetails(prev => ({ ...prev!, [name]: value }));
+    };
+
+    const handleSave = async () => {
+        if (!details) return;
+        await dataService.updateBankDetails(details);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+    };
+
+    if (!details) return <div>Loading...</div>;
+
+    return (
+        <div className="bg-brand-background p-4 rounded-lg">
+            <h3 className="block text-sm font-bold text-brand-secondary mb-1">{t('admin.settingsManager.bankDetails.title')}</h3>
+            <p className="text-xs text-brand-secondary mb-4">{t('admin.settingsManager.bankDetails.subtitle')}</p>
+            <div className="space-y-4">
+                <SettingsInputField name="bankName" label={t('admin.settingsManager.bankDetails.bankName')} value={details.bankName} onChange={handleChange} />
+                <SettingsInputField name="accountHolder" label={t('admin.settingsManager.bankDetails.accountHolder')} value={details.accountHolder} onChange={handleChange} />
+                <SettingsInputField name="accountNumber" label={t('admin.settingsManager.bankDetails.accountNumber')} value={details.accountNumber} onChange={handleChange} />
+                <SettingsInputField name="accountType" label={t('admin.settingsManager.bankDetails.accountType')} value={details.accountType} onChange={handleChange} />
+                <SettingsInputField name="taxId" label={t('admin.settingsManager.bankDetails.taxId')} value={details.taxId} onChange={handleChange} />
+                <div>
+                    <label htmlFor="details" className="block text-xs font-bold text-gray-500 mb-1">{t('admin.settingsManager.bankDetails.details')}</label>
+                    <textarea id="details" name="details" value={details.details || ''} onChange={handleChange} rows={3} className="w-full p-2 border border-gray-300 rounded-lg"/>
+                </div>
+            </div>
+            <div className="mt-4 flex justify-end items-center gap-4">
+                {saved && (<p className="text-sm font-semibold text-brand-success animate-fade-in">{t('admin.settingsManager.bankDetails.savedMessage')}</p>)}
+                <button onClick={handleSave} className="bg-brand-primary text-white font-bold py-2 px-6 rounded-lg hover:bg-brand-accent">{t('admin.settingsManager.bankDetails.saveButton')}</button>
             </div>
         </div>
     );
@@ -494,6 +543,21 @@ export const SettingsManager: React.FC = () => {
                                 <div className="absolute top-0 left-0 h-full w-0.5 bg-brand-primary/20 rounded-full"></div>
                                 <div className="space-y-6">
                                     <CommunicationAutomationManager />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-start gap-4">
+                        <CurrencyDollarIcon className="w-8 h-8 text-brand-primary mt-1" />
+                        <div className="flex-grow">
+                            <h3 className="text-xl font-semibold text-brand-text">{t('admin.settingsManager.paymentSettings.title')}</h3>
+                             <p className="text-brand-secondary text-sm mb-6">{t('admin.settingsManager.paymentSettings.subtitle')}</p>
+                            <div className="relative pl-6">
+                                <div className="absolute top-0 left-0 h-full w-0.5 bg-brand-primary/20 rounded-full"></div>
+                                <div className="space-y-6">
+                                    <BankDetailsEditor />
                                 </div>
                             </div>
                         </div>

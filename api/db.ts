@@ -1,9 +1,8 @@
 import { sql } from '@vercel/postgres';
-// FIX: Corrected import names for default data.
 import { 
     DEFAULT_PRODUCTS, DEFAULT_AVAILABLE_SLOTS_BY_DAY, DEFAULT_INSTRUCTORS, 
     DEFAULT_POLICIES_TEXT, DEFAULT_CONFIRMATION_MESSAGE, DEFAULT_CLASS_CAPACITY, 
-    DEFAULT_CAPACITY_MESSAGES, DEFAULT_FOOTER_INFO, DEFAULT_AUTOMATION_SETTINGS
+    DEFAULT_CAPACITY_MESSAGES, DEFAULT_FOOTER_INFO, DEFAULT_AUTOMATION_SETTINGS, DEFAULT_BANK_DETAILS
 } from '../constants.js';
 
 const SCHEMA_SQL = `
@@ -92,76 +91,69 @@ export async function ensureTablesExist() {
     await sql.query(SCHEMA_SQL);
 }
 
+const seedSetting = async (key: string, value: any) => {
+  await sql`
+    INSERT INTO settings (key, value) 
+    VALUES (${key}, ${JSON.stringify(value)}) 
+    ON CONFLICT (key) DO NOTHING;
+  `;
+};
+
 export async function seedDatabase() {
-    const { rows: settingsCheck } = await sql`SELECT 1 FROM settings WHERE key = 'seeded'`;
-    if (settingsCheck.length > 0) {
-        return;
+    // Seed products only if the table is empty
+    const { rows: productCheck } = await sql`SELECT 1 FROM products LIMIT 1`;
+    if (productCheck.length === 0) {
+        console.log("Seeding products...");
+        for (const p of DEFAULT_PRODUCTS) {
+            let classesValue = null;
+            let priceValue = null;
+            let detailsValue = null;
+            let schedulingRulesValue = null;
+            let overridesValue = null;
+
+            if ('classes' in p) { classesValue = p.classes || null; }
+            if ('price' in p) { priceValue = p.price || null; }
+            if ('details' in p) { detailsValue = p.details ? JSON.stringify(p.details) : null; }
+            if ('schedulingRules' in p) { schedulingRulesValue = p.schedulingRules ? JSON.stringify(p.schedulingRules) : null; }
+            if ('overrides' in p) { overridesValue = p.overrides ? JSON.stringify(p.overrides) : null; }
+
+            await sql`
+                INSERT INTO products (
+                    id, type, name, classes, price, description, image_url, details, is_active, scheduling_rules, overrides
+                ) 
+                VALUES (
+                    ${p.id}, ${p.type}, ${p.name}, ${classesValue}, ${priceValue}, 
+                    ${p.description || null}, ${p.imageUrl || null}, ${detailsValue}, 
+                    ${p.isActive}, ${schedulingRulesValue}, ${overridesValue}
+                ) ON CONFLICT (id) DO NOTHING;
+            `;
+        }
     }
-    
-    console.log("Seeding database for the first time...");
 
-    for (const p of DEFAULT_PRODUCTS) {
-        let classesValue = null;
-        let priceValue = null;
-        let detailsValue = null;
-        let schedulingRulesValue = null;
-        let overridesValue = null;
-
-        if ('classes' in p) {
-            classesValue = p.classes || null;
+    // Seed instructors only if the table is empty
+    const { rows: instructorCheck } = await sql`SELECT 1 FROM instructors LIMIT 1`;
+    if (instructorCheck.length === 0) {
+        console.log("Seeding instructors...");
+        for (const i of DEFAULT_INSTRUCTORS) {
+            await sql`INSERT INTO instructors (id, name, color_scheme) VALUES (${i.id}, ${i.name}, ${i.colorScheme}) ON CONFLICT (id) DO NOTHING;`;
         }
-        if ('price' in p) {
-            priceValue = p.price || null;
-        }
-        if ('details' in p) {
-            detailsValue = p.details ? JSON.stringify(p.details) : null;
-        }
-        if ('schedulingRules' in p) {
-            schedulingRulesValue = p.schedulingRules ? JSON.stringify(p.schedulingRules) : null;
-        }
-        if ('overrides' in p) {
-            overridesValue = p.overrides ? JSON.stringify(p.overrides) : null;
-        }
-
-        await sql`
-            INSERT INTO products (
-                id, type, name, classes, price, description, image_url, details, is_active, scheduling_rules, overrides
-            ) 
-            VALUES (
-                ${p.id}, 
-                ${p.type}, 
-                ${p.name}, 
-                ${classesValue}, 
-                ${priceValue}, 
-                ${p.description || null}, 
-                ${p.imageUrl || null}, 
-                ${detailsValue}, 
-                ${p.isActive}, 
-                ${schedulingRulesValue}, 
-                ${overridesValue}
-            )
-            ON CONFLICT (id) DO NOTHING;
-        `;
     }
-    
-    for (const i of DEFAULT_INSTRUCTORS) {
-        await sql`INSERT INTO instructors (id, name, color_scheme) VALUES (${i.id}, ${i.name}, ${i.colorScheme}) ON CONFLICT (id) DO NOTHING;`;
-    }
-    
-    await sql`INSERT INTO settings (key, value) VALUES ('availability', ${JSON.stringify(DEFAULT_AVAILABLE_SLOTS_BY_DAY)}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('scheduleOverrides', ${JSON.stringify({ })}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('announcements', ${JSON.stringify([])}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('policies', ${JSON.stringify(DEFAULT_POLICIES_TEXT)}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('confirmationMessage', ${JSON.stringify(DEFAULT_CONFIRMATION_MESSAGE)}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('classCapacity', ${JSON.stringify(DEFAULT_CLASS_CAPACITY)}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('capacityMessages', ${JSON.stringify(DEFAULT_CAPACITY_MESSAGES)}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('uiText_es', ${JSON.stringify({ })}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('uiText_en', ${JSON.stringify({ })}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('footerInfo', ${JSON.stringify(DEFAULT_FOOTER_INFO)}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('automationSettings', ${JSON.stringify(DEFAULT_AUTOMATION_SETTINGS)}) ON CONFLICT (key) DO NOTHING;`;
-    await sql`INSERT INTO settings (key, value) VALUES ('backgroundSettings', ${JSON.stringify({topLeft: null, bottomRight: null})}) ON CONFLICT (key) DO NOTHING;`;
 
-    await sql`INSERT INTO settings (key, value) VALUES ('seeded', 'true') ON CONFLICT (key) DO NOTHING;`;
-    
-    console.log("Database seeding complete.");
+    // Seed settings individually to allow for additions over time
+    console.log("Seeding settings...");
+    await seedSetting('availability', DEFAULT_AVAILABLE_SLOTS_BY_DAY);
+    await seedSetting('scheduleOverrides', {});
+    await seedSetting('announcements', []);
+    await seedSetting('policies', DEFAULT_POLICIES_TEXT);
+    await seedSetting('confirmationMessage', DEFAULT_CONFIRMATION_MESSAGE);
+    await seedSetting('classCapacity', DEFAULT_CLASS_CAPACITY);
+    await seedSetting('capacityMessages', DEFAULT_CAPACITY_MESSAGES);
+    await seedSetting('uiText_es', {});
+    await seedSetting('uiText_en', {});
+    await seedSetting('footerInfo', DEFAULT_FOOTER_INFO);
+    await seedSetting('automationSettings', DEFAULT_AUTOMATION_SETTINGS);
+    await seedSetting('bankDetails', DEFAULT_BANK_DETAILS);
+    await seedSetting('backgroundSettings', {topLeft: null, bottomRight: null});
+
+    console.log("Database seeding check complete.");
 }

@@ -4,7 +4,7 @@ import type {
     Product, Booking, ScheduleOverrides, Notification, Announcement, Instructor, 
     ConfirmationMessage, ClassCapacity, EnrichedAvailableSlot, CapacityMessageSettings, 
     UITexts, FooterInfo, DayKey, AvailableSlot, GroupInquiry, AddBookingResult, 
-    PaymentDetails, AttendanceStatus, ClientNotification, AutomationSettings, ClassPackage, IntroductoryClass, OpenStudioSubscription, UserInfo, Customer, EnrichedIntroClassSession, BackgroundSettings, AppData
+    PaymentDetails, AttendanceStatus, ClientNotification, AutomationSettings, ClassPackage, IntroductoryClass, OpenStudioSubscription, UserInfo, Customer, EnrichedIntroClassSession, BackgroundSettings, AppData, BankDetails
 } from '../types';
 import { DAY_NAMES } from '../constants.ts';
 
@@ -185,6 +185,8 @@ export const getClientNotifications = (): Promise<ClientNotification[]> => getDa
 export const generateScheduledNotifications = (): Promise<{ success: boolean }> => postAction('generateScheduledNotifications', {});
 export const getBackgroundSettings = (): Promise<BackgroundSettings> => getData('backgroundSettings');
 export const updateBackgroundSettings = (settings: BackgroundSettings): Promise<{ success: boolean }> => setData('backgroundSettings', settings);
+export const getBankDetails = (): Promise<BankDetails> => getData('bankDetails');
+export const updateBankDetails = (details: BankDetails): Promise<{ success: boolean }> => setData('bankDetails', details);
 
 // --- Client-side Calculations and Utilities ---
 

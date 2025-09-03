@@ -9,7 +9,7 @@ import { BookingSummary } from './components/BookingSummary';
 import { ClassInfoModal } from './components/ClassInfoModal';
 import { UserInfoModal } from './components/UserInfoModal';
 import { AdminConsole } from './components/admin/AdminConsole';
-import type { Product, ClassPackage, TimeSlot, BookingDetails, UserInfo, Booking, BookingMode, ConfirmationMessage, IntroClassSession, FooterInfo, GroupInquiry, AppView, DayKey, AvailableSlot, ScheduleOverrides, Instructor, ClassCapacity, CapacityMessageSettings, Announcement, AppData } from './types';
+import type { Product, ClassPackage, TimeSlot, BookingDetails, UserInfo, Booking, BookingMode, ConfirmationMessage, IntroClassSession, FooterInfo, GroupInquiry, AppView, DayKey, AvailableSlot, ScheduleOverrides, Instructor, ClassCapacity, CapacityMessageSettings, Announcement, AppData, BankDetails } from './types';
 import { generateBookingPDF } from './services/pdfService';
 import { useLanguage } from './context/LanguageContext';
 import * as dataService from './services/dataService';
@@ -56,6 +56,7 @@ const App: React.FC = () => {
   const [isPrerequisiteModalVisible, setIsPrerequisiteModalVisible] = useState(false);
   
   const [copied, setCopied] = useState(false);
+  const [copiedAccount, setCopiedAccount] = useState(false);
   
   const refetchData = useCallback(() => setDataVersion(v => v + 1), []);
 
@@ -65,7 +66,8 @@ const App: React.FC = () => {
       try {
         const [
           products, instructors, availability, scheduleOverrides, classCapacity, 
-          capacityMessages, announcements, policies, confirmationMessage, footerInfo, bookings
+          capacityMessages, announcements, policies, confirmationMessage, footerInfo, bookings,
+          bankDetails
         ] = await Promise.all([
           dataService.getProducts(),
           dataService.getInstructors(),
@@ -78,9 +80,10 @@ const App: React.FC = () => {
           dataService.getConfirmationMessage(),
           dataService.getFooterInfo(),
           dataService.getBookings(),
+          dataService.getBankDetails(),
         ]);
         
-        setAppData({ products, instructors, availability, scheduleOverrides, classCapacity, capacityMessages, announcements, bookings, policies, confirmationMessage, footerInfo });
+        setAppData({ products, instructors, availability, scheduleOverrides, classCapacity, capacityMessages, announcements, bookings, policies, confirmationMessage, footerInfo, bankDetails });
         
       } catch (error) {
         console.error("Failed to initialize app data:", error);
@@ -98,11 +101,6 @@ const App: React.FC = () => {
     }
   }, [dataVersion]); // Re-fetch all data when dataVersion changes
   
-  // Scroll to top on view change
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentView, confirmedBooking]);
-
   const resetToStart = useCallback(() => {
     setCurrentView('welcome');
     setSelectedProduct(null);
@@ -243,6 +241,15 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCopyAccount = () => {
+    if (appData?.bankDetails?.accountNumber) {
+        navigator.clipboard.writeText(appData.bankDetails.accountNumber).then(() => {
+            setCopiedAccount(true);
+            setTimeout(() => setCopiedAccount(false), 2000);
+        });
+    }
+  };
+
   const handleShowPolicies = useCallback(() => {
     setIsUserInfoModalVisible(false);
     setIsPolicyModalVisible(true);
@@ -299,6 +306,46 @@ const App: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {appData.bankDetails && appData.bankDetails.bankName && (
+             <div className="mt-8 text-left max-w-md mx-auto bg-brand-background p-6 rounded-lg">
+                <h3 className="text-lg font-semibold text-brand-text mb-4">{t('confirmation.bankDetailsTitle')}</h3>
+                <dl className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                        <dt className="font-semibold text-brand-secondary">{t('confirmation.bankName')}:</dt>
+                        <dd className="text-brand-text">{appData.bankDetails.bankName}</dd>
+                    </div>
+                     <div className="flex justify-between">
+                        <dt className="font-semibold text-brand-secondary">{t('confirmation.accountHolder')}:</dt>
+                        <dd className="text-brand-text">{appData.bankDetails.accountHolder}</dd>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <dt className="font-semibold text-brand-secondary">{t('confirmation.accountNumber')}:</dt>
+                        <dd className="flex items-center gap-2">
+                            <span className="text-brand-text font-mono">{appData.bankDetails.accountNumber}</span>
+                             <button onClick={handleCopyAccount} className="bg-brand-secondary text-white text-xs font-bold py-1 px-2 rounded-md">
+                                {copiedAccount ? t('confirmation.copiedButton') : t('confirmation.copyCodeButton')}
+                            </button>
+                        </dd>
+                    </div>
+                    <div className="flex justify-between">
+                        <dt className="font-semibold text-brand-secondary">{t('confirmation.accountType')}:</dt>
+                        <dd className="text-brand-text">{appData.bankDetails.accountType}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                        <dt className="font-semibold text-brand-secondary">{t('confirmation.taxId')}:</dt>
+                        <dd className="text-brand-text">{appData.bankDetails.taxId}</dd>
+                    </div>
+                    {appData.bankDetails.details && (
+                        <div className="pt-3 border-t border-brand-border/50">
+                            <dt className="font-semibold text-brand-secondary">{t('confirmation.details')}:</dt>
+                            <dd className="text-brand-text mt-1">{appData.bankDetails.details}</dd>
+                        </div>
+                    )}
+                </dl>
+                <p className="mt-4 text-xs text-brand-secondary text-center">{t('confirmation.transferReference', { code: confirmedBooking.bookingCode })}</p>
+            </div>
+          )}
 
           <div className="mt-8 text-left max-w-md mx-auto">
             <h3 className="text-lg font-semibold text-brand-text mb-4">{t('confirmation.paymentInstructionsTitle')}</h3>

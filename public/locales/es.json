@@ -63,13 +63,7 @@
     "subtitle": "Elige una fecha para tu primera experiencia en cerámica. Todos los materiales incluidos.",
     "selectButton": "Seleccionar esta Clase",
     "noSessions": "Actualmente no hay clases introductorias programadas. ¡Vuelve pronto!",
-    "continueButton": "Guardar y Continuar",
-    "wizard": {
-      "stepMonth": "Mes",
-      "stepDay": "Día",
-      "stepTime": "Hora",
-      "backButton": "Volver"
-    }
+    "continueButton": "Guardar y Continuar"
   },
   "products": {
     "introClass": {
@@ -174,6 +168,14 @@
     "bookingCodeLabel": "Tu Código de Reserva",
     "copyCodeButton": "Copiar",
     "copiedButton": "¡Copiado!",
+    "bankDetailsTitle": "Datos para Transferencia Bancaria",
+    "bankName": "Banco",
+    "accountHolder": "Titular de la Cuenta",
+    "accountNumber": "Número de Cuenta",
+    "accountType": "Tipo de Cuenta",
+    "taxId": "RUT / CUIT / Identificador",
+    "details": "Detalles Adicionales",
+    "transferReference": "Importante: Por favor, utiliza tu código de reserva {{code}} como referencia en la transferencia.",
     "paymentInstructionsTitle": "Próximos Pasos para Activar",
     "paymentInstruction1": "Contáctanos por WhatsApp con tu comprobante de pago.",
     "paymentInstruction2": "Incluye tu código de reserva: {{code}}.",
@@ -596,6 +598,22 @@
       "subtitle": "Gestiona la configuración general de la aplicación.",
       "contentManagerTitle": "Gestor de Contenido y Textos",
       "contentManagerSubtitle": "Gestiona todos los textos y mensajes que ven los clientes desde un solo lugar.",
+      "paymentSettings": {
+        "title": "Configuración de Pagos",
+        "subtitle": "Configura los datos bancarios para transferencias."
+      },
+      "bankDetails": {
+        "title": "Datos Bancarios",
+        "subtitle": "Esta información se mostrará a los clientes en la pantalla de confirmación.",
+        "bankName": "Nombre del Banco",
+        "accountHolder": "Nombre del Titular",
+        "accountNumber": "Número de Cuenta",
+        "accountType": "Tipo de Cuenta (Ej: Corriente, Ahorros)",
+        "taxId": "RUT / CUIT / Identificador",
+        "details": "Otros Detalles (SWIFT, IBAN, etc.)",
+        "saveButton": "Guardar Datos Bancarios",
+        "savedMessage": "¡Datos guardados!"
+      },
       "automation": {
         "managerTitle": "Centro de Automatización de Comunicaciones",
         "managerSubtitle": "Configura y activa las comunicaciones automáticas con los clientes.",

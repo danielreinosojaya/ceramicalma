@@ -63,13 +63,7 @@
     "subtitle": "Choose a date for your first pottery experience. All materials included.",
     "selectButton": "Select this Class",
     "noSessions": "There are currently no introductory classes scheduled. Please check back soon!",
-    "continueButton": "Save and Continue",
-    "wizard": {
-      "stepMonth": "Month",
-      "stepDay": "Day",
-      "stepTime": "Time",
-      "backButton": "Back"
-    }
+    "continueButton": "Save and Continue"
   },
   "packages": {
     "title": "Choose Your Package",
@@ -161,6 +155,14 @@
     "bookingCodeLabel": "Your Booking Code",
     "copyCodeButton": "Copy",
     "copiedButton": "Copied!",
+    "bankDetailsTitle": "Bank Transfer Details",
+    "bankName": "Bank",
+    "accountHolder": "Account Holder",
+    "accountNumber": "Account Number",
+    "accountType": "Account Type",
+    "taxId": "Tax ID / Identifier",
+    "details": "Additional Details",
+    "transferReference": "Important: Please use your booking code {{code}} as the reference for the transfer.",
     "paymentInstructionsTitle": "Next Steps to Activate",
     "paymentInstruction1": "Contact us via WhatsApp with your payment receipt.",
     "paymentInstruction2": "Include your booking code: {{code}}.",
@@ -583,6 +585,22 @@
       "subtitle": "Manage general application settings.",
       "contentManagerTitle": "Content & Text Manager",
       "contentManagerSubtitle": "Manage all customer-facing texts and messages from one place.",
+      "paymentSettings": {
+        "title": "Payment Settings",
+        "subtitle": "Configure the bank details for wire transfers."
+      },
+      "bankDetails": {
+        "title": "Bank Details",
+        "subtitle": "This information will be displayed to customers on the confirmation screen.",
+        "bankName": "Bank Name",
+        "accountHolder": "Account Holder Name",
+        "accountNumber": "Account Number",
+        "accountType": "Account Type (e.g., Checking, Savings)",
+        "taxId": "Tax ID / Identifier (RUT, CUIT, etc.)",
+        "details": "Other Details (SWIFT, IBAN, etc.)",
+        "saveButton": "Save Bank Details",
+        "savedMessage": "Bank details saved!"
+      },
       "automation": {
         "managerTitle": "Communication Automation Center",
         "managerSubtitle": "Configure and enable automated client communications.",
