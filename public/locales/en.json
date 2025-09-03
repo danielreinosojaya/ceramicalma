@@ -63,7 +63,12 @@
     "subtitle": "Choose a date for your first pottery experience. All materials included.",
     "selectButton": "Select this Class",
     "noSessions": "There are currently no introductory classes scheduled. Please check back soon!",
-    "continueButton": "Save and Continue"
+    "continueButton": "Save and Continue",
+    "wizard": {
+      "stepMonth": "Select Month",
+      "stepDay": "Select Day",
+      "stepTime": "Select Time"
+    }
   },
   "packages": {
     "title": "Choose Your Package",
@@ -672,7 +677,7 @@
     }
   },
   "app": {
-    "loading": "Loading",
-    "soldOut": "Sold Out"
+    "loading": "Cargando",
+    "soldOut": "Agotado"
   }
 }
