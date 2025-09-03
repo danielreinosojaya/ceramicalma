@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { WelcomeSelector } from './components/WelcomeSelector';
@@ -97,6 +98,11 @@ const App: React.FC = () => {
     }
   }, [dataVersion]); // Re-fetch all data when dataVersion changes
   
+  // Scroll to top on view change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentView, confirmedBooking]);
+
   const resetToStart = useCallback(() => {
     setCurrentView('welcome');
     setSelectedProduct(null);

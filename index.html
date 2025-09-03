@@ -23,34 +23,31 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CeramicAlma - Reserva de Clases</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              'brand-background': '#F7F5F2', // Warm Plaster
-              'brand-surface': '#FFFFFF',
-              'brand-primary': '#D95F43', // Terracotta (Primary Actions)
-              'brand-secondary': '#8896A6', // Cadet Blue-Gray (Secondary Text/Elements)
-              'brand-text': '#414141', // Dark Charcoal (Main Text)
-              'brand-accent': '#D95F43', // Terracotta
-              'brand-success': '#16A34A', // Green 600
-              'brand-border': '#E5E5E5', // Light Gray Border
-              'brand-premium-dark': '#334b46', // Deep earthy teal
-              'brand-premium-light': '#d1e0dd', // Soft off-white for premium text
-              'sky': { 200: '#bae6fd', 800: '#075985' },
-              'teal': { 200: '#99f6e4', 800: '#115e59' },
-              'rose': { 200: '#fecdd3', 800: '#881337' },
-              'indigo': { 200: '#c7d2fe', 800: '#3730a3' },
-              'amber': { 200: '#fde68a', 800: '#78350f' },
+              'brand-background': '#F4F2F1', // Lightest beige for background
+              'brand-surface': '#FFFFFF',    // White for cards and modals for crispness
+              'brand-primary': '#828E98',     // Slate blue for primary actions/buttons
+              'brand-secondary': '#958985',   // Earthy taupe for secondary text/elements
+              'brand-text': '#4A4540',       // Dark warm gray for main text (from previous config for contrast)
+              'brand-accent': '#CCBCB2',      // Rosy beige for secondary accents
+              'brand-success': '#16A34A',
+              'brand-border': '#D1D0C6',      // Sage gray for borders
+              'brand-stone': '#C8C9CB',       // Cool gray for utility
             },
             fontFamily: {
-              sans: ['"Poppins"', 'sans-serif'],
+              sans: ['"Cardo"', 'serif'],
             },
             boxShadow: {
-              'subtle': '0 4px 12px rgba(0, 0, 0, 0.05)',
-              'lifted': '0 10px 25px rgba(0, 0, 0, 0.07)',
+              'subtle': '0 4px 12px rgba(149, 137, 133, 0.1)',
+              'lifted': '0 10px 25px rgba(149, 137, 133, 0.15)',
             },
             animation: {
               'fade-in': 'fadeIn 0.5s ease-out forwards',
@@ -87,7 +84,7 @@
         );
       }
       .bg-brushed-clay {
-          background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+          background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23958985' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
       }
     </style>
   </head>
