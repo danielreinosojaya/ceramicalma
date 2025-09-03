@@ -1,4 +1,4 @@
-import type { Product, AvailableSlot, Instructor, ConfirmationMessage, ClassCapacity, CapacityMessageSettings, DayKey, FooterInfo, AutomationSettings } from '@/types';
+import type { Product, AvailableSlot, Instructor, ConfirmationMessage, ClassCapacity, CapacityMessageSettings, DayKey, FooterInfo, AutomationSettings } from './types';
 
 export const PALETTE_COLORS = [
     { name: 'sky', bg: 'bg-sky-200', text: 'text-sky-800' },
@@ -135,58 +135,80 @@ export const DEFAULT_PRODUCTS: Product[] = [
     id: 6,
     type: 'COUPLES_EXPERIENCE',
     name: "Experiencia en Pareja",
-    description: "Una cita creativa y diferente. Moldeen una pieza juntos en el torno o creen piezas individuales, con la guía de un instructor.",
-    imageUrl: "https://images.unsplash.com/photo-1620531579344-59e514a331a3?q=80&w=1964&auto=format&fit=crop",
+// FIX: Added isActive property and completed the description.
+    description: "Una cita creativa y diferente. Moldeen una pieza juntos en el torno o creen piezas individuales uno al lado del otro.",
     isActive: true
   }
 ];
-
+// FIX: Added missing default exports to be used by the API layer.
 export const DEFAULT_INSTRUCTORS: Instructor[] = [
-  { id: 1, name: "Caro", colorScheme: "rose" },
-  { id: 2, name: "Ana", colorScheme: "teal" },
-  { id: 3, name: "Lucia", colorScheme: "amber" }
+  { id: 1, name: 'Ana', colorScheme: 'sky' },
+  { id: 2, name: 'Carlos', colorScheme: 'teal' },
 ];
 
 export const DEFAULT_AVAILABLE_SLOTS_BY_DAY: Record<DayKey, AvailableSlot[]> = {
+  Monday: [
+    { time: '10:00 AM', instructorId: 1 },
+    { time: '03:00 PM', instructorId: 2 },
+  ],
+  Tuesday: [
+    { time: '10:00 AM', instructorId: 1 },
+    { time: '03:00 PM', instructorId: 2 },
+  ],
+  Wednesday: [
+    { time: '10:00 AM', instructorId: 1 },
+    { time: '03:00 PM', instructorId: 2 },
+  ],
+  Thursday: [
+    { time: '10:00 AM', instructorId: 1 },
+    { time: '03:00 PM', instructorId: 2 },
+  ],
+  Friday: [
+    { time: '10:00 AM', instructorId: 1 },
+    { time: '03:00 PM', instructorId: 2 },
+  ],
+  Saturday: [
+    { time: '10:00 AM', instructorId: 1 },
+    { time: '02:00 PM', instructorId: 2 },
+  ],
   Sunday: [],
-  Monday: [{ time: '18:00', instructorId: 1 }, { time: '20:30', instructorId: 2 }],
-  Tuesday: [{ time: '10:00', instructorId: 1 }, { time: '18:00', instructorId: 2 }],
-  Wednesday: [{ time: '18:00', instructorId: 1 }, { time: '20:30', instructorId: 3 }],
-  Thursday: [{ time: '10:00', instructorId: 2 }, { time: '18:00', instructorId: 3 }],
-  Friday: [{ time: '17:00', instructorId: 1 }],
-  Saturday: [{ time: '10:00', instructorId: 3 }, { time: '12:30', instructorId: 1 }],
 };
 
-export const DEFAULT_POLICIES_TEXT = `Políticas de Cancelación y Reprogramación:
-- Se requiere un aviso de al menos 72 horas para reprogramar una clase sin penalización.
-- Las cancelaciones con menos de 72 horas de antelación no son reembolsables.
-- Los paquetes de clases tienen una validez de 30 días desde la fecha de la primera clase agendada.
+export const DEFAULT_POLICIES_TEXT: string = `
+Políticas de Cancelación:
+- Cancelaciones con más de 48 horas de antelación: Reembolso completo o reprogramación.
+- Cancelaciones con menos de 48 horas: No hay reembolso. Se puede reprogramar con un cargo del 50%.
+- No presentarse (no-show) resultará en la pérdida total de la clase.
 
-Proceso de Devoluciones:
-- No se realizan devoluciones monetarias una vez comprado un paquete o clase.
-- Se puede ofrecer crédito en la tienda para futuras clases si la cancelación cumple con nuestras políticas.`;
+Recomendaciones Generales:
+- Por favor, llega 10 minutos antes de tu clase.
+- Usa ropa cómoda que no te importe ensuciar.
+- Mantén las uñas cortas para una mejor experiencia en el torno.
+`;
 
 export const DEFAULT_CONFIRMATION_MESSAGE: ConfirmationMessage = {
-  title: "¡Pre-reserva Exitosa!",
-  message: "¡Tu lugar está guardado! Completa el último paso para activar tu reserva."
+  title: '¡Pre-reserva completada!',
+  message: 'Hemos recibido tu solicitud. Para confirmar tu cupo, por favor realiza el pago y envía el comprobante por WhatsApp.'
 };
 
-export const DEFAULT_CLASS_CAPACITY: ClassCapacity = { max: 8 };
+export const DEFAULT_CLASS_CAPACITY: ClassCapacity = {
+  max: 8,
+};
 
 export const DEFAULT_CAPACITY_MESSAGES: CapacityMessageSettings = {
     thresholds: [
-        { level: 'available', threshold: 0, message: '¡Cupos disponibles!' },
-        { level: 'few', threshold: 50, message: '¡Quedan pocos cupos!' },
-        { level: 'last', threshold: 80, message: '¡Últimos cupos!' }
+        { level: 'available', threshold: 0, message: 'Espacios disponibles' },
+        { level: 'few', threshold: 50, message: 'Quedan pocos cupos' },
+        { level: 'last', threshold: 85, message: '¡Último cupo!' }
     ]
 };
 
 export const DEFAULT_FOOTER_INFO: FooterInfo = {
-    address: "123 Calle de la Cerámica, Miraflores, Lima",
-    email: "hola@ceramicalma.com",
-    whatsapp: "+51 987 654 321",
-    googleMapsLink: "https://maps.google.com",
-    instagramHandle: "@ceramicalma"
+    address: 'Av. Principal 123, Miraflores, Lima',
+    email: 'hola@ceramic-alma.com',
+    whatsapp: '+51 987 654 321',
+    googleMapsLink: 'https://maps.google.com',
+    instagramHandle: '@ceramic_alma'
 };
 
 export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {

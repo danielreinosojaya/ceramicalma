@@ -63,7 +63,13 @@
     "subtitle": "Elige una fecha para tu primera experiencia en cerámica. Todos los materiales incluidos.",
     "selectButton": "Seleccionar esta Clase",
     "noSessions": "Actualmente no hay clases introductorias programadas. ¡Vuelve pronto!",
-    "continueButton": "Guardar y Continuar"
+    "continueButton": "Guardar y Continuar",
+    "wizard": {
+      "stepMonth": "Mes",
+      "stepDay": "Día",
+      "stepTime": "Hora",
+      "backButton": "Volver"
+    }
   },
   "products": {
     "introClass": {

@@ -7,6 +7,7 @@ import type {
     GroupInquiry, AddBookingResult, PaymentDetails, AttendanceStatus,
     InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo
 } from '../types.js';
+// FIX: Corrected import names for default data.
 import { 
     DEFAULT_PRODUCTS, DEFAULT_AVAILABLE_SLOTS_BY_DAY, DEFAULT_INSTRUCTORS, 
     DEFAULT_POLICIES_TEXT, DEFAULT_CONFIRMATION_MESSAGE, DEFAULT_CLASS_CAPACITY, 

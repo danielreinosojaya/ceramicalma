@@ -5,7 +5,7 @@ import * as dataService from '../../services/dataService';
 import { CubeIcon } from '../icons/CubeIcon';
 import { TrashIcon } from '../icons/TrashIcon';
 import { PlusIcon } from '../icons/PlusIcon';
-import { DAY_NAMES } from '@/constants';
+import { DAY_NAMES } from '../../constants';
 import { IntroClassCalendar } from './IntroClassCalendar';
 
 interface IntroClassModalProps {
@@ -116,7 +116,7 @@ export const IntroClassModal: React.FC<IntroClassModalProps> = ({ isOpen, onClos
         return;
     }
 
-    setFormData(prev => ({ ...prev, schedulingRules: [...prev.schedulingRules, ruleToAdd] }));
+    setFormData(prev => ({ ...prev, schedulingRules: [...prev.schedulingRules, ruleToAdd].sort((a,b) => a.dayOfWeek - b.dayOfWeek || a.time.localeCompare(b.time)) }));
   };
 
   const handleRemoveRule = (ruleId: string) => {
@@ -127,88 +127,126 @@ export const IntroClassModal: React.FC<IntroClassModalProps> = ({ isOpen, onClos
       setFormData(prev => ({ ...prev, overrides: newOverrides }));
   };
 
+  // FIX: Add missing handleSubmit function and JSX return for the modal component.
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData, classToEdit?.id);
+    const classData: Omit<IntroductoryClass, 'id' | 'isActive' | 'type'> = {
+        ...formData,
+        price: Number(formData.price) || 0,
+        details: {
+            ...formData.details,
+            durationHours: Number(formData.details.durationHours) || 0
+        }
+    };
+    onSave(classData, classToEdit?.id);
   };
-  
+
   if (!isOpen) return null;
-  
-  const translatedDayNames = DAY_NAMES.map((dayKey, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() - date.getDay() + index);
-    return date.toLocaleDateString(language, { weekday: 'long' });
-  });
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-      <div className="bg-brand-surface rounded-xl shadow-2xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-brand-surface rounded-xl shadow-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in-up"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="text-2xl font-serif text-brand-accent mb-4 text-center">
           {classToEdit ? t('admin.introClassModal.editTitle') : t('admin.introClassModal.createTitle')}
         </h2>
         <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InputField label={t('admin.packageModal.nameLabel')} id="name" name="name" value={formData.name} onChange={handleChange} required />
-                <InputField label={t('admin.packageModal.priceLabel')} id="price" name="price" type="number" value={formData.price} onChange={handleChange} required />
-                <div className="md:col-span-2"><TextareaField label={t('admin.packageModal.descriptionLabel')} id="description" name="description" value={formData.description} onChange={handleChange} /></div>
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-bold text-brand-secondary mb-1">{t('admin.packageModal.imageLabel')}</label>
-                    <div className="mt-1 flex items-center gap-4 p-2 border-2 border-dashed border-gray-300 rounded-lg">
-                        {formData.imageUrl ? <img src={formData.imageUrl} alt="Preview" className="w-24 h-24 object-cover rounded-md" /> : <div className="w-24 h-24 bg-gray-100 rounded-md flex items-center justify-center text-gray-400"><CubeIcon className="w-10 h-10" /></div>}
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-white border border-brand-secondary text-brand-secondary font-bold py-2 px-4 rounded-lg hover:bg-gray-100">{t('admin.packageModal.uploadImageButton')}</button>
-                    </div>
-                </div>
-                <InputField label={t('admin.packageModal.durationLabel')} id="duration" name="duration" value={formData.details.duration} onChange={handleDetailChange} />
-                <InputField label={t('admin.packageModal.durationHoursLabel')} id="durationHours" name="durationHours" type="number" step="0.5" value={formData.details.durationHours} onChange={handleDetailChange} required />
-                <div className="md:col-span-2"><TextareaField label={t('admin.packageModal.activitiesLabel')} id="activities" name="activities" value={Array.isArray(formData.details.activities) ? formData.details.activities.join('\n') : ''} onChange={handleDetailChange} /></div>
-                <TextareaField label={t('admin.packageModal.generalRecommendationsLabel')} id="generalRecommendations" name="generalRecommendations" value={formData.details.generalRecommendations} onChange={handleDetailChange} />
-                <TextareaField label={t('admin.packageModal.materialsLabel')} id="materials" name="materials" value={formData.details.materials} onChange={handleDetailChange} />
-                
-                <div className="md:col-span-2 bg-brand-background p-4 rounded-lg">
-                    <h3 className="font-bold text-brand-accent mb-3">{t('admin.introClassModal.schedulingRulesTitle')}</h3>
-                    <div className="space-y-2 mb-4">
-                        {formData.schedulingRules.length > 0 ? formData.schedulingRules.map(rule => (
-                            <div key={rule.id} className="flex items-center justify-between bg-white p-2 rounded-md">
-                                <div>
-                                    <p className="font-semibold text-sm">
-                                        {translatedDayNames[rule.dayOfWeek]} @ {new Date(`1970-01-01T${rule.time}`).toLocaleTimeString(language, { hour: 'numeric', minute: '2-digit', hour12: true })}
-                                    </p>
-                                    <p className="text-xs text-brand-secondary">
-                                      {t('admin.introClassModal.instructorLabel')}: {instructors.find(i=>i.id === rule.instructorId)?.name}, {t('admin.introClassModal.capacityLabel')}: {rule.capacity}
-                                    </p>
-                                </div>
-                                <button type="button" onClick={() => handleRemoveRule(rule.id)} className="text-red-500 hover:text-red-700 p-1"><TrashIcon className="w-4 h-4" /></button>
-                            </div>
-                        )) : <p className="text-sm text-center text-brand-secondary py-2">{t('admin.introClassModal.noSchedulingRules')}</p>}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 p-2 border-t border-gray-200">
-                        <select value={newRule.dayOfWeek} onChange={e => setNewRule({...newRule, dayOfWeek: Number(e.target.value)})} className="p-1 border rounded-md text-sm">
-                            {translatedDayNames.map((day, index) => <option key={index} value={index}>{day}</option>)}
-                        </select>
-                        <input type="time" value={newRule.time} onChange={e => setNewRule({...newRule, time: e.target.value})} className="p-1 border rounded-md text-sm"/>
-                        <select value={newRule.instructorId} onChange={e => setNewRule({...newRule, instructorId: Number(e.target.value)})} className="p-1 border rounded-md text-sm">
-                            {instructors.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
-                        </select>
-                        <input type="number" min="1" value={newRule.capacity} onChange={e => setNewRule({...newRule, capacity: Number(e.target.value)})} className="p-1 border rounded-md text-sm w-20" placeholder={t('admin.introClassModal.capacityLabel')}/>
-                        <button type="button" onClick={handleAddRule} className="p-2 bg-brand-primary text-white rounded-md hover:bg-brand-accent disabled:bg-gray-400" disabled={!newRule.time || instructors.length === 0}>
-                            <PlusIcon className="w-4 h-4"/>
-                        </button>
-                    </div>
-                </div>
+           <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/png, image/jpeg, image/webp"
+            className="hidden"
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <InputField label={t('admin.packageModal.nameLabel')} id="name" name="name" value={formData.name} onChange={handleChange} required />
+            <InputField label={t('admin.packageModal.priceLabel')} id="price" name="price" type="number" value={formData.price} onChange={handleChange} required />
+            <div className="md:col-span-2">
+                <TextareaField label={t('admin.packageModal.descriptionLabel')} id="description" name="description" value={formData.description} onChange={handleChange} />
+            </div>
 
-                <div className="md:col-span-2 bg-brand-background p-4 rounded-lg">
-                    <IntroClassCalendar 
-                        product={{...formData, id: classToEdit?.id || 0, type: 'INTRODUCTORY_CLASS', isActive: true}} 
-                        onOverridesChange={handleOverridesChange} 
-                    />
+            <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-brand-secondary mb-1">{t('admin.packageModal.imageLabel')}</label>
+                <div className="mt-1 flex items-center gap-4 p-2 border-2 border-dashed border-gray-300 rounded-lg">
+                    {formData.imageUrl ? (
+                    <img src={formData.imageUrl} alt="Preview" className="w-24 h-24 object-cover rounded-md" />
+                    ) : (
+                    <div className="w-24 h-24 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">
+                        <CubeIcon className="w-10 h-10" />
+                    </div>
+                    )}
+                    <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-white border border-brand-secondary text-brand-secondary font-bold py-2 px-4 rounded-lg hover:bg-gray-100"
+                    >
+                    {t('admin.packageModal.uploadImageButton')}
+                    </button>
                 </div>
             </div>
-            <div className="mt-6 flex justify-end gap-3">
-                <button type="button" onClick={onClose} className="bg-white border border-brand-secondary text-brand-secondary font-bold py-2 px-6 rounded-lg hover:bg-gray-100">{t('admin.productManager.cancelButton')}</button>
-                <button type="submit" className="bg-brand-primary text-white font-bold py-2 px-6 rounded-lg hover:bg-brand-accent">{t('admin.packageModal.saveButton')}</button>
+
+            <div className="md:col-span-2 border-t pt-4 mt-2">
+                <h3 className="font-bold text-brand-accent mb-2">{t('admin.packageModal.detailsSectionTitle')}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputField label={t('admin.packageModal.durationLabel')} name="duration" value={formData.details.duration} onChange={handleDetailChange} />
+                    <InputField label={t('admin.packageModal.durationHoursLabel')} name="durationHours" type="number" step="0.5" value={formData.details.durationHours} onChange={handleDetailChange} />
+                    <div className="md:col-span-2">
+                        <TextareaField label={t('admin.packageModal.activitiesLabel')} name="activities" value={formData.details.activities.join('\n')} onChange={handleDetailChange} />
+                    </div>
+                    <TextareaField label={t('admin.packageModal.generalRecommendationsLabel')} name="generalRecommendations" value={formData.details.generalRecommendations} onChange={handleDetailChange} />
+                    <TextareaField label={t('admin.packageModal.materialsLabel')} name="materials" value={formData.details.materials} onChange={handleDetailChange} />
+                </div>
             </div>
+
+             <div className="md:col-span-2 border-t pt-4 mt-2">
+                <h3 className="font-bold text-brand-accent mb-2">{t('admin.introClassModal.rulesTitle')}</h3>
+                <p className="text-sm text-brand-secondary mb-4">{t('admin.introClassModal.rulesSubtitle')}</p>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2 bg-gray-50 p-2 rounded-lg">
+                    {formData.schedulingRules.length > 0 ? formData.schedulingRules.map(rule => (
+                        <div key={rule.id} className="flex items-center justify-between bg-white p-2 rounded-md text-sm border">
+                            <div>
+                                <span className="font-semibold">{DAY_NAMES[rule.dayOfWeek]} at {new Date(`1970-01-01T${rule.time}`).toLocaleTimeString(language, { hour: 'numeric', minute: '2-digit' })}</span>
+                                <span className="text-gray-600 ml-2">({instructors.find(i => i.id === rule.instructorId)?.name}, cap: {rule.capacity})</span>
+                            </div>
+                            <button type="button" onClick={() => handleRemoveRule(rule.id)} className="p-1 text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4" /></button>
+                        </div>
+                    )) : <p className="text-xs text-center text-gray-500 py-2">No weekly rules defined.</p>}
+                </div>
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                    <select value={newRule.dayOfWeek} onChange={e => setNewRule({...newRule, dayOfWeek: Number(e.target.value)})} className="p-2 border rounded-md text-sm bg-white">
+                        {DAY_NAMES.map((day, index) => index > 0 && <option key={day} value={index}>{day}</option>)}
+                    </select>
+                    <input type="time" value={newRule.time} onChange={e => setNewRule({...newRule, time: e.target.value})} className="p-2 border rounded-md text-sm"/>
+                    <select value={newRule.instructorId} onChange={e => setNewRule({...newRule, instructorId: Number(e.target.value)})} className="p-2 border rounded-md text-sm bg-white">
+                        {instructors.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+                    </select>
+                    <input type="number" min="1" value={newRule.capacity} onChange={e => setNewRule({...newRule, capacity: Number(e.target.value)})} className="p-2 border rounded-md text-sm w-20" placeholder="Cap."/>
+                    <button type="button" onClick={handleAddRule} className="p-2.5 bg-brand-primary text-white rounded-md"><PlusIcon className="w-4 h-4"/></button>
+                </div>
+            </div>
+
+            <div className="md:col-span-2 border-t pt-4 mt-2">
+                <IntroClassCalendar 
+                    product={{ ...classToEdit, ...formData } as IntroductoryClass}
+                    onOverridesChange={handleOverridesChange} 
+                />
+            </div>
+
+          </div>
+          <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-200">
+             <button type="button" onClick={onClose} className="bg-white border border-brand-secondary text-brand-secondary font-bold py-2 px-6 rounded-lg hover:bg-gray-100">
+                 {t('admin.productManager.cancelButton')}
+             </button>
+             <button type="submit" className="bg-brand-primary text-white font-bold py-2 px-6 rounded-lg hover:bg-brand-accent">
+                {t('admin.packageModal.saveButton')}
+             </button>
+          </div>
         </form>
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" className="hidden"/>
       </div>
     </div>
   );
