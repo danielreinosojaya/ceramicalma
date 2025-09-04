@@ -521,6 +521,8 @@
       "pendingPreservationsTab": "Pre-reservas Pendientes",
       "capacityHealthTab": "Salud de Capacidad",
       "pendingSubtitle": "Rastrea y gestiona todas las pre-reservas pendientes de pago.",
+      "packagesAndClasses": "Paquetes y Clases",
+      "openStudio": "Open Studio",
       "pendingTable": {
         "date": "Fecha Pre-reserva",
         "customer": "Cliente",

@@ -10,6 +10,7 @@ import { UserIcon } from '../icons/UserIcon';
 
 type FilterPeriod = 'today' | 'week' | 'month' | 'custom';
 type FinancialTab = 'summary' | 'pending' | 'capacity';
+type PendingSubTab = 'packages' | 'openStudio';
 
 interface NavigationState {
     tab: AdminTab;
@@ -117,6 +118,7 @@ const CapacityHealthView: React.FC = () => {
 export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings: allBookings, onDataChange, setNavigateTo }) => {
     const { t, language } = useLanguage();
     const [activeTab, setActiveTab] = useState<FinancialTab>('summary');
+    const [pendingSubTab, setPendingSubTab] = useState<PendingSubTab>('packages');
 
     // State for Summary Tab
     const [summaryPeriod, setSummaryPeriod] = useState<FilterPeriod>('month');
@@ -138,38 +140,36 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
         });
     }, [summaryPeriod, summaryCustomRange, allBookings]);
 
-    const pendingBookings = useMemo(() => {
+    const { pendingPackageBookings, pendingOpenStudioBookings } = useMemo(() => {
         const { startDate, endDate } = getDatesForPeriod(pendingPeriod, pendingCustomRange);
-        return allBookings.filter(b => {
-            if (b.isPaid) return false;
-
-            // For bookings with scheduled classes (packages, intro classes),
-            // check if any class falls within the selected period.
-            if (b.slots && b.slots.length > 0) {
-                return b.slots.some(slot => {
-                    // The date from the DB is just 'YYYY-MM-DD', so create date object carefully to avoid timezone issues.
-                    const slotDate = new Date(slot.date + 'T00:00:00');
-                    return slotDate >= startDate && slotDate <= endDate;
-                });
-            }
-            
-            // For bookings without scheduled classes (like Open Studio subscriptions
-            // or packages pending scheduling), check if the pre-booking was created
-            // within the selected period.
-            else {
-                const creationDate = new Date(b.createdAt);
-                return creationDate >= startDate && creationDate <= endDate;
-            }
+        
+        const packages = allBookings.filter(b => {
+            if (b.isPaid || (b.productType !== 'CLASS_PACKAGE' && b.productType !== 'INTRODUCTORY_CLASS')) return false;
+            // Filter by scheduled class date
+            return b.slots.some(slot => {
+                const slotDate = new Date(slot.date + 'T00:00:00');
+                return slotDate >= startDate && slotDate <= endDate;
+            });
         }).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    }, [pendingPeriod, pendingCustomRange, allBookings]);
 
+        const openStudio = allBookings.filter(b => {
+            if (b.isPaid || b.productType !== 'OPEN_STUDIO_SUBSCRIPTION') return false;
+            // Filter by creation date
+            const creationDate = new Date(b.createdAt);
+            return creationDate >= startDate && creationDate <= endDate;
+        }).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        
+        return { pendingPackageBookings: packages, pendingOpenStudioBookings: openStudio };
+    }, [pendingPeriod, pendingCustomRange, allBookings]);
+    
+    const pendingBookingsToDisplay = pendingSubTab === 'packages' ? pendingPackageBookings : pendingOpenStudioBookings;
 
     const kpis = useMemo(() => {
         const totalRevenue = summaryBookings.reduce((sum, b) => sum + b.price, 0);
         const paidBookingsCount = summaryBookings.length;
         const avgRevenue = paidBookingsCount > 0 ? totalRevenue / paidBookingsCount : 0;
 
-        const packageRevenue = summaryBookings.reduce((acc, b) => {
+        const packageRevenue = summaryBookings.reduce((acc: Record<string, number>, b: Booking) => {
             if (!b.product) return acc;
             const key = b.product.name;
             acc[key] = (acc[key] || 0) + b.price;
@@ -203,7 +203,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
     const paymentMethodChartRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
-        if (activeTab !== 'summary') return;
+        if (activeTab !== 'summary' || !lineChartRef.current || !doughnutChartRef.current || !paymentMethodChartRef.current) return;
     
         const charts = [lineChartRef, doughnutChartRef, paymentMethodChartRef];
         charts.forEach(ref => {
@@ -215,9 +215,9 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
             }
         });
 
-        const lineCtx = lineChartRef.current?.getContext('2d');
-        const doughnutCtx = doughnutChartRef.current?.getContext('2d');
-        const paymentMethodCtx = paymentMethodChartRef.current?.getContext('2d');
+        const lineCtx = lineChartRef.current.getContext('2d');
+        const doughnutCtx = doughnutChartRef.current.getContext('2d');
+        const paymentMethodCtx = paymentMethodChartRef.current.getContext('2d');
 
         if (!lineCtx || !doughnutCtx || !paymentMethodCtx) return;
 
@@ -243,7 +243,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
             const key = b.product.name;
             acc[key] = (acc[key] || 0) + b.price;
             return acc;
-        }, {});
+        }, {} as Record<string, number>);
         
         new Chart(doughnutCtx, {
             type: 'doughnut', data: {
@@ -307,6 +307,20 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
       >
         {children}
       </button>
+    );
+
+    const PendingSubTabButton: React.FC<{ isActive: boolean; onClick: () => void; count: number; children: React.ReactNode; }> = ({ isActive, onClick, count, children }) => (
+        <button
+          onClick={onClick}
+          className={`flex items-center px-1 py-2 text-sm font-semibold border-b-2 transition-colors ${isActive ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+        >
+          {children}
+          {count > 0 && (
+            <span className="ml-2 bg-brand-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {count}
+            </span>
+          )}
+        </button>
     );
 
     return (
@@ -381,6 +395,26 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
             {activeTab === 'pending' && (
                  <div className="animate-fade-in">
                     <p className="text-brand-secondary mb-6">{t('admin.financialDashboard.pendingSubtitle')}</p>
+
+                    <div className="border-b border-gray-200 mb-6">
+                        <nav className="-mb-px flex space-x-6" aria-label="Pending Tabs">
+                            <PendingSubTabButton 
+                                isActive={pendingSubTab === 'packages'} 
+                                onClick={() => setPendingSubTab('packages')}
+                                count={pendingPackageBookings.length}
+                            >
+                                {t('admin.financialDashboard.packagesAndClasses')}
+                            </PendingSubTabButton>
+                            <PendingSubTabButton 
+                                isActive={pendingSubTab === 'openStudio'} 
+                                onClick={() => setPendingSubTab('openStudio')}
+                                count={pendingOpenStudioBookings.length}
+                            >
+                                {t('admin.financialDashboard.openStudio')}
+                            </PendingSubTabButton>
+                        </nav>
+                    </div>
+
                     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-2 flex-wrap">
                         <button onClick={() => setPendingPeriod('today')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${pendingPeriod === 'today' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.today')}</button>
                         <button onClick={() => setPendingPeriod('week')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${pendingPeriod === 'week' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.thisWeek')}</button>
@@ -405,7 +439,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {pendingBookings.length > 0 ? pendingBookings.map(b => (
+                                    {pendingBookingsToDisplay.length > 0 ? pendingBookingsToDisplay.map(b => (
                                         <tr key={b.id}>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{new Date(b.createdAt).toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric'})}</td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">
