@@ -11,14 +11,16 @@ export const ClientNotificationLog: React.FC = () => {
     const [notifications, setNotifications] = useState<ClientNotification[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<ClientNotificationType | 'all'>('all');
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const loadNotifications = async () => {
-            // Simulate cron job to generate scheduled notifications on view
-            await dataService.generateScheduledNotifications();
-            // Then, fetch all notifications, including the newly generated ones.
+            setIsLoading(true);
+            // This now triggers the backend to generate and send reminders
+            await dataService.triggerScheduledNotifications();
             const fetchedNotifications = await dataService.getClientNotifications();
             setNotifications(fetchedNotifications);
+            setIsLoading(false);
         };
         loadNotifications();
     }, []);
@@ -77,7 +79,13 @@ export const ClientNotificationLog: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredNotifications.length > 0 ? filteredNotifications.map((n) => (
+                        {isLoading ? (
+                             <tr>
+                                <td colSpan={4} className="text-center py-10 text-brand-secondary">
+                                    {t('app.loading')}...
+                                </td>
+                            </tr>
+                        ) : filteredNotifications.length > 0 ? filteredNotifications.map((n) => (
                             <tr key={n.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-text">
                                     {new Date(n.createdAt).toLocaleString(language, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -90,8 +98,8 @@ export const ClientNotificationLog: React.FC = () => {
                                     {t(`admin.clientNotificationLog.type_${n.type}`)}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        {n.status}
+                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${n.status === 'Sent' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                        {t(`admin.clientNotificationLog.status_${n.status}`)}
                                     </span>
                                 </td>
                             </tr>

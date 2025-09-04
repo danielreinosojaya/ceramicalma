@@ -223,7 +223,9 @@
         "noNotifications": "No client communications have been logged yet.",
         "type_PRE_BOOKING_CONFIRMATION": "Pre-Booking Confirmation",
         "type_PAYMENT_RECEIPT": "Payment Receipt",
-        "type_CLASS_REMINDER": "Class Reminder"
+        "type_CLASS_REMINDER": "Class Reminder",
+        "status_Sent": "Sent",
+        "status_Scheduled": "Scheduled"
     },
     "inquiryManager": {
       "title": "Event Inquiries",
@@ -619,7 +621,9 @@
         "days": "days",
         "beforeClass": "before the class.",
         "saveButton": "Save Automations",
-        "savedMessage": "Automation settings saved!"
+        "savedMessage": "Automation settings saved!",
+        "envVarTitle": "Configuration Required",
+        "envVarMessage": "For emails to send correctly, you must configure the following environment variables in your hosting service (e.g., Vercel):"
       },
       "policiesLabel": "Policies and Returns Process",
       "saveButton": "Save Policies",

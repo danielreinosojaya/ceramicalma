@@ -236,7 +236,9 @@
       "noNotifications": "Aún no se han registrado comunicaciones con clientes.",
       "type_PRE_BOOKING_CONFIRMATION": "Confirmación de Pre-reserva",
       "type_PAYMENT_RECEIPT": "Recibo de Pago",
-      "type_CLASS_REMINDER": "Recordatorio de Clase"
+      "type_CLASS_REMINDER": "Recordatorio de Clase",
+      "status_Sent": "Enviado",
+      "status_Scheduled": "Programado"
     },
     "inquiryManager": {
       "title": "Consultas de Eventos",
@@ -632,7 +634,9 @@
         "days": "días",
         "beforeClass": "antes de la clase.",
         "saveButton": "Guardar Automatizaciones",
-        "savedMessage": "¡Configuración guardada!"
+        "savedMessage": "¡Configuración guardada!",
+        "envVarTitle": "Configuración Requerida",
+        "envVarMessage": "Para que los correos electrónicos se envíen correctamente, debes configurar las siguientes variables de entorno en tu servicio de hosting (ej. Vercel):"
       },
       "policiesLabel": "Políticas y Proceso de Devoluciones",
       "saveButton": "Guardar Políticas",

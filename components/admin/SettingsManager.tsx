@@ -6,6 +6,7 @@ import type { ConfirmationMessage, ClassCapacity, CapacityMessageSettings, Capac
 import { DocumentTextIcon } from '../icons/DocumentTextIcon';
 import { SparklesIcon } from '../icons/SparklesIcon';
 import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
+import { ExclamationTriangleIcon } from '../icons/ExclamationTriangleIcon';
 
 const SettingsInputField: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string }> = ({ label, ...props }) => (
     <div>
@@ -62,6 +63,26 @@ const CommunicationAutomationManager: React.FC = () => {
             <p className="text-xs text-brand-secondary mb-4">
                 {t('admin.settingsManager.automation.subtitle')}
             </p>
+
+            <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-800 p-4 rounded-r-lg mb-6">
+                <div className="flex">
+                    <div className="flex-shrink-0">
+                        <ExclamationTriangleIcon className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <div className="ml-3">
+                        <h3 className="text-sm font-bold">{t('admin.settingsManager.automation.envVarTitle')}</h3>
+                        <div className="mt-2 text-sm">
+                            <p>{t('admin.settingsManager.automation.envVarMessage')}</p>
+                            <ul className="list-disc list-inside mt-2 space-y-1 font-mono text-xs">
+                                <li>RESEND_API_KEY</li>
+                                <li>EMAIL_FROM</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm">{t('admin.settingsManager.automation.preBookingConfirmation')}</span>
