@@ -670,7 +670,8 @@
       "prerequisiteConfirmButtonLabel": "Confirmation Button Text",
       "prerequisiteGoToIntroButtonLabel": "Redirect Button Text",
       "savePrerequisiteButton": "Save Message",
-      "prerequisiteSavedMessage": "Message saved!"
+      "prerequisiteSavedMessage": "Message saved!",
+      "requiredFieldIndicator": "*"
     },
     "errors": {
       "DUPLICATE_BOOKING_ERROR": "This user is already registered for this class on this day and time.",

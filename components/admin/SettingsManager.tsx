@@ -166,15 +166,17 @@ const BankDetailsEditor: React.FC = () => {
     };
 
     if (!details) return <div>Loading...</div>;
+    
+    const isSaveDisabled = !details.bankName || !details.accountHolder || !details.accountNumber;
 
     return (
         <div className="bg-brand-background p-4 rounded-lg">
             <h3 className="block text-sm font-bold text-brand-secondary mb-1">{t('admin.settingsManager.bankDetails.title')}</h3>
             <p className="text-xs text-brand-secondary mb-4">{t('admin.settingsManager.bankDetails.subtitle')}</p>
             <div className="space-y-4">
-                <SettingsInputField name="bankName" label={t('admin.settingsManager.bankDetails.bankName')} value={details.bankName} onChange={handleChange} />
-                <SettingsInputField name="accountHolder" label={t('admin.settingsManager.bankDetails.accountHolder')} value={details.accountHolder} onChange={handleChange} />
-                <SettingsInputField name="accountNumber" label={t('admin.settingsManager.bankDetails.accountNumber')} value={details.accountNumber} onChange={handleChange} />
+                <SettingsInputField name="bankName" label={`${t('admin.settingsManager.bankDetails.bankName')} ${t('admin.settingsManager.requiredFieldIndicator')}`} value={details.bankName} onChange={handleChange} required />
+                <SettingsInputField name="accountHolder" label={`${t('admin.settingsManager.bankDetails.accountHolder')} ${t('admin.settingsManager.requiredFieldIndicator')}`} value={details.accountHolder} onChange={handleChange} required />
+                <SettingsInputField name="accountNumber" label={`${t('admin.settingsManager.bankDetails.accountNumber')} ${t('admin.settingsManager.requiredFieldIndicator')}`} value={details.accountNumber} onChange={handleChange} required />
                 <SettingsInputField name="accountType" label={t('admin.settingsManager.bankDetails.accountType')} value={details.accountType} onChange={handleChange} />
                 <SettingsInputField name="taxId" label={t('admin.settingsManager.bankDetails.taxId')} value={details.taxId} onChange={handleChange} />
                 <div>
@@ -184,7 +186,13 @@ const BankDetailsEditor: React.FC = () => {
             </div>
             <div className="mt-4 flex justify-end items-center gap-4">
                 {saved && (<p className="text-sm font-semibold text-brand-success animate-fade-in">{t('admin.settingsManager.bankDetails.savedMessage')}</p>)}
-                <button onClick={handleSave} className="bg-brand-primary text-white font-bold py-2 px-6 rounded-lg hover:bg-brand-accent">{t('admin.settingsManager.bankDetails.saveButton')}</button>
+                <button 
+                  onClick={handleSave} 
+                  disabled={isSaveDisabled}
+                  className="bg-brand-primary text-white font-bold py-2 px-6 rounded-lg hover:bg-brand-accent disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                    {t('admin.settingsManager.bankDetails.saveButton')}
+                </button>
             </div>
         </div>
     );

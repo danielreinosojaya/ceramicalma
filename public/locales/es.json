@@ -683,7 +683,8 @@
       "prerequisiteConfirmButtonLabel": "Texto del Botón de Confirmación",
       "prerequisiteGoToIntroButtonLabel": "Texto del Botón de Redirección",
       "savePrerequisiteButton": "Guardar Mensaje",
-      "prerequisiteSavedMessage": "¡Mensaje guardado!"
+      "prerequisiteSavedMessage": "¡Mensaje guardado!",
+      "requiredFieldIndicator": "*"
     },
     "errors": {
       "DUPLICATE_BOOKING_ERROR": "Este usuario ya está registrado para esta clase en este día y hora.",
