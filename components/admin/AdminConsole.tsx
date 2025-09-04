@@ -5,7 +5,7 @@ import { ProductManager } from './ProductManager';
 import { CalendarOverview } from './CalendarOverview';
 import { ScheduleManager } from './ScheduleManager';
 import { FinancialDashboard } from './FinancialDashboard';
-import { CrmDashboard } from './CrmDashboard';
+import CrmDashboard from './CrmDashboard';
 import { useNotifications } from '../../context/NotificationContext';
 import { NotificationBell } from './NotificationBell';
 import { NotificationToast } from './NotificationToast';
@@ -173,6 +173,63 @@ export const AdminConsole: React.FC = () => {
         return null;
     }
   };
+
+  const TabButton: React.FC<{ tab: AdminTab; children: React.ReactNode; icon: React.ReactNode }> = ({ tab, children, icon }) => (
+    <button
+      onClick={() => {
+        if (tab === 'calendar') setCalendarView('month');
+        setActiveTab(tab);
+      }}
+      className={`flex items-center gap-2 px-3 py-2 text-sm font-bold rounded-md transition-colors ${
+        activeTab === tab
+          ? 'bg-brand-primary text-white'
+          : 'text-brand-secondary hover:bg-brand-background'
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+
+  return (
+    <div className="bg-brand-background min-h-screen text-brand-text font-sans">
+      <NotificationToast />
+      <header className="bg-brand-surface shadow-md">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="w-24">
+            <Logo />
+          </div>
+          <h1 className="text-xl sm:text-2xl font-serif text-brand-accent text-center">
+            {t('admin.headerTitle')}
+          </h1>
+          <div className="w-24 flex justify-end items-center gap-2">
+              <SyncButton hasNewData={false} isSyncing={isSyncing} onClick={handleSync} />
+              <NotificationBell onNotificationClick={handleNotificationClick} />
+          </div>
+        </div>
+      </header>
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-screen-xl mx-auto">
+          <div className="bg-brand-surface rounded-lg shadow-lg p-4 mb-6">
+            <div className="flex items-center space-x-2 flex-wrap gap-2">
+              <TabButton tab="products" icon={<CubeIcon className="w-4 h-4" />}>{t('admin.productsTab')}</TabButton>
+              <TabButton tab="calendar" icon={<CalendarIcon className="w-4 h-4" />}>{t('admin.calendarTab')}</TabButton>
+              <TabButton tab="schedule-settings" icon={<CalendarEditIcon className="w-4 h-4" />}>{t('admin.scheduleSettingsTab')}</TabButton>
+              <TabButton tab="inquiries" icon={<ChatBubbleLeftRightIcon className="w-4 h-4" />}>{t('admin.inquiriesTab')}</TabButton>
+              <TabButton tab="communications" icon={<PaperAirplaneIcon className="w-4 h-4" />}>{t('admin.communicationsTab')}</TabButton>
+              <TabButton tab="financials" icon={<ChartBarIcon className="w-4 h-4" />}>{t('admin.financialsTab')}</TabButton>
+              <TabButton tab="customers" icon={<UserGroupIcon className="w-4 h-4" />}>{t('admin.customersTab')}</TabButton>
+              <TabButton tab="settings" icon={<CogIcon className="w-4 h-4" />}>{t('admin.settingsTab')}</TabButton>
+            </div>
+          </div>
+          <div className="bg-brand-surface rounded-lg shadow-lg p-6">
+            {renderContent()}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
 
   const TabButton: React.FC<{ tab: AdminTab; children: React.ReactNode; icon: React.ReactNode }> = ({ tab, children, icon }) => (
     <button

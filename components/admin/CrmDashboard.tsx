@@ -1,190 +1,202 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import type { Customer, Booking, ClassPackage, TimeSlot, OpenStudioSubscription } from '../../types';
-import { useLanguage } from '../../context/LanguageContext';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import type { Customer, Booking, ClassPackage, TimeSlot, Product } from '../../types';
 import * as dataService from '../../services/dataService';
-import { MailIcon } from '../icons/MailIcon';
-import { PhoneIcon } from '../icons/PhoneIcon';
-import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
-import { TrashIcon } from '../icons/TrashIcon';
-import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { useLanguage } from '../../context/LanguageContext';
+import { CustomerList } from './CustomerList';
+import { CustomerDetailView } from './CustomerDetailView';
+import { UserGroupIcon } from '../icons/UserGroupIcon';
 
-const KPICard: React.FC<{ title: string; value: string | number; }> = ({ title, value }) => (
-    <div className="bg-brand-background p-4 rounded-lg">
-        <h3 className="text-sm font-semibold text-brand-secondary">{title}</h3>
-        <p className="text-2xl font-bold text-brand-text mt-1">{value}</p>
-    </div>
-);
+interface CrmDashboardProps {
+    navigateToEmail?: string;
+    bookings: Booking[];
+    onDataChange: () => void;
+}
+
+export type FilterType = 'all' | '1-left' | '2-left' | 'completed';
+
+export interface RemainingClassesInfo {
+    remaining: number;
+    status: 'active' | 'completed';
+}
+
+export interface AugmentedCustomer extends Customer {
+    remainingClassesInfo: RemainingClassesInfo | null;
+}
 
 const getSlotDateTime = (slot: TimeSlot) => {
-    const time24h = new Date(`1970-01-01 ${slot.time}`).toTimeString().slice(0, 5);
-    const [hours, minutes] = time24h.split(':').map(Number);
-    const [year, month, day] = slot.date.split('-').map(Number);
-    return new Date(year, month - 1, day, hours, minutes);
+    const [time, modifier] = slot.time.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (modifier && modifier.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+    if (modifier && modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
+    const startDateTime = new Date(slot.date + 'T00:00:00');
+    startDateTime.setHours(hours, minutes, 0, 0);
+    return startDateTime;
+};
+
+const getRemainingClassesInfo = (customer: Customer): RemainingClassesInfo | null => {
+    const now = new Date();
+    
+    const validPackages = customer.bookings.filter(booking => {
+        if (booking.productType !== 'CLASS_PACKAGE' || !booking.slots || booking.slots.length === 0) return false;
+        
+        const firstClassDate = booking.slots.map(getSlotDateTime).sort((a,b) => a.getTime() - b.getTime())[0];
+        if (!firstClassDate) return false;
+        
+        const expiryDate = new Date(firstClassDate);
+        expiryDate.setDate(expiryDate.getDate() + 30);
+        
+        return now < expiryDate;
+
+    }).sort((a, b) => {
+        const expiryA = new Date(a.slots.map(getSlotDateTime).sort((c, d) => c.getTime() - d.getTime())[0]);
+        expiryA.setDate(expiryA.getDate() + 30);
+        const expiryB = new Date(b.slots.map(getSlotDateTime).sort((c, d) => c.getTime() - d.getTime())[0]);
+        expiryB.setDate(expiryB.getDate() + 30);
+        return expiryA.getTime() - expiryB.getTime();
+    });
+    
+    if (validPackages.length === 0) return null;
+
+    const mostRelevantPackage = validPackages[0];
+    if (mostRelevantPackage.product.type !== 'CLASS_PACKAGE') return null;
+
+    const product = mostRelevantPackage.product as ClassPackage;
+    const completedClasses = mostRelevantPackage.slots.filter(slot => getSlotDateTime(slot) < now).length;
+    const remaining = product.classes - completedClasses;
+
+    return {
+        remaining,
+        status: remaining > 0 ? 'active' : 'completed'
+    };
 };
 
 
-export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => void; onDataChange: () => void; }> = ({ customer, onBack, onDataChange }) => {
-    const { t, language } = useLanguage();
-    
-    const [now, setNow] = useState(new Date());
-    const [bookingsPage, setBookingsPage] = useState(1);
-    const recordsPerPage = 5;
-    const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
+const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, onDataChange }) => {
+    const { t } = useLanguage();
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterByClassesRemaining, setFilterByClassesRemaining] = useState<FilterType>('all');
+
+
+    const loadCustomers = useCallback(() => {
+        setCustomers(dataService.getCustomers(bookings));
+    }, [bookings]);
 
     useEffect(() => {
-        const timerId = setInterval(() => setNow(new Date()), 60000);
-        return () => clearInterval(timerId);
-    }, []);
-
-    const formatDate = (dateInput: Date | string | undefined) => {
-        if (!dateInput) return '---';
-        const date = new Date(dateInput);
-        if (isNaN(date.getTime())) {
-             if(typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}(T.*)?$/.test(dateInput)) {
-                const dateOnly = new Date(dateInput);
-                 if (!isNaN(dateOnly.getTime())) {
-                     return dateOnly.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
-                 }
+        loadCustomers();
+        setLoading(false);
+    }, [loadCustomers]);
+    
+    useEffect(() => {
+        if (navigateToEmail) {
+            const customer = customers.find(c => c.userInfo.email === navigateToEmail);
+            if (customer) {
+                setSelectedCustomer(customer);
+                setSearchTerm('');
             }
-            return '---';
         }
-        return date.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
+    }, [navigateToEmail, customers]);
+
+    useEffect(() => {
+      if (selectedCustomer) {
+        const updatedCustomer = dataService.getCustomers(bookings).find(c => c.email === selectedCustomer.email);
+        setSelectedCustomer(updatedCustomer || null);
+      }
+    }, [bookings, selectedCustomer]);
+
+
+    const augmentedAndFilteredCustomers = useMemo((): AugmentedCustomer[] => {
+        const augmented = customers.map(c => ({
+            ...c,
+            remainingClassesInfo: getRemainingClassesInfo(c)
+        }));
+
+        let filtered = augmented;
+        
+        if (filterByClassesRemaining !== 'all') {
+            filtered = filtered.filter(c => {
+                if (!c.remainingClassesInfo) return false;
+                if (filterByClassesRemaining === '1-left') return c.remainingClassesInfo.remaining === 1 && c.remainingClassesInfo.status === 'active';
+                if (filterByClassesRemaining === '2-left') return c.remainingClassesInfo.remaining === 2 && c.remainingClassesInfo.status === 'active';
+                if (filterByClassesRemaining === 'completed') return c.remainingClassesInfo.status === 'completed';
+                return false;
+            });
+        }
+        
+        if (searchTerm) {
+            const lowercasedTerm = searchTerm.toLowerCase();
+            filtered = filtered.filter(c => 
+                c.userInfo.firstName.toLowerCase().includes(lowercasedTerm) ||
+                c.userInfo.lastName.toLowerCase().includes(lowercasedTerm) ||
+                c.userInfo.email.toLowerCase().includes(lowercasedTerm) ||
+                c.bookings.some(b => b.bookingCode?.toLowerCase().includes(lowercasedTerm))
+            );
+        }
+
+        return filtered;
+    }, [customers, searchTerm, filterByClassesRemaining]);
+
+    const handleSelectCustomer = (customer: Customer) => {
+        setSelectedCustomer(customer);
     };
 
-    const handleTogglePaidStatus = async (booking: Booking) => {
-        if (booking.isPaid) {
-            if (window.confirm("Are you sure you want to mark this booking as UNPAID? This will remove the payment details.")) {
-               await dataService.markBookingAsUnpaid(booking.id);
-               onDataChange();
-            }
-        } else {
-            // In a real app, this would open a payment modal. For now, we manually set it.
-            await dataService.markBookingAsPaid(booking.id, { method: 'Manual', amount: booking.price });
-            onDataChange();
-        }
+    const handleBackToList = () => {
+        setSelectedCustomer(null);
     };
     
-    const handleDeleteRequest = (booking: Booking) => {
-        setBookingToDelete(booking);
-    };
-
-    const handleDeleteConfirm = async () => {
-        if (bookingToDelete) {
-            await dataService.deleteBooking(bookingToDelete.id);
-            setBookingToDelete(null);
-            onDataChange();
-        }
-    };
-
-    const { userInfo, totalSpent, lastBookingDate, bookings } = customer;
-
-    const allBookingsSorted = useMemo(() => 
-        [...bookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-        [bookings]
+    const FilterButton: React.FC<{ filter: FilterType; children: React.ReactNode; }> = ({ filter, children }) => (
+        <button
+            onClick={() => setFilterByClassesRemaining(filter)}
+            className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors ${filterByClassesRemaining === filter ? 'bg-brand-primary text-white' : 'bg-brand-background hover:bg-brand-primary/20'}`}
+        >
+            {children}
+        </button>
     );
 
-    const totalBookingPages = Math.ceil(allBookingsSorted.length / recordsPerPage);
-    const paginatedBookings = allBookingsSorted.slice((bookingsPage - 1) * recordsPerPage, bookingsPage * recordsPerPage);
-
-    const renderProgressExpiry = (booking: Booking) => {
-        if (booking.productType === 'CLASS_PACKAGE' && booking.product.type === 'CLASS_PACKAGE' && booking.slots && booking.slots.length > 0) {
-            const completed = booking.slots.filter(s => getSlotDateTime(s) < now).length;
-            const total = booking.product.classes;
-            return <span className="text-sm">{t('admin.crm.completedOf', { completed, total })}</span>
-        }
-        if (booking.productType === 'OPEN_STUDIO_SUBSCRIPTION' && booking.product.type === 'OPEN_STUDIO_SUBSCRIPTION' && booking.isPaid && booking.paymentDetails) {
-            const startDate = new Date(booking.paymentDetails.receivedAt);
-            const expiryDate = new Date(startDate);
-            const durationDays = booking.product.details.durationDays;
-            expiryDate.setDate(startDate.getDate() + durationDays);
-            const isActive = now < expiryDate;
-            return (
-                 <span className={`text-sm ${isActive ? 'text-brand-text' : 'text-gray-500'}`}>
-                    {t('admin.crm.expiresOn', { date: formatDate(expiryDate) })}
-                </span>
-            )
-        }
-        return <span className="text-sm text-gray-400">N/A</span>;
-    };
+    if (loading) {
+        return <div>Loading customers...</div>
+    }
 
     return (
-        <div className="animate-fade-in">
-            {bookingToDelete && (
-                <DeleteConfirmationModal
-                    isOpen={!!bookingToDelete}
-                    onClose={() => setBookingToDelete(null)}
-                    onConfirm={handleDeleteConfirm}
-                    title={t('admin.crm.deleteBookingTitle')}
-                    message={t('admin.crm.deleteBookingMessage', { code: bookingToDelete.bookingCode || 'N/A' })}
-                />
-            )}
-            <button onClick={onBack} className="text-brand-secondary hover:text-brand-accent mb-4 transition-colors font-semibold">
-                &larr; {t('admin.crm.backToList')}
-            </button>
-            <div className="bg-brand-background p-6 rounded-lg mb-6">
-                <h3 className="text-2xl font-serif text-brand-accent">{userInfo.firstName} {userInfo.lastName}</h3>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-brand-secondary">
-                    <a href={`mailto:${userInfo.email}`} className="flex items-center gap-2 hover:text-brand-accent"><MailIcon className="w-4 h-4" /> {userInfo.email}</a>
-                    <div className="flex items-center gap-2"><PhoneIcon className="w-4 h-4" /> {userInfo.countryCode} {userInfo.phone}</div>
+        <div>
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h2 className="text-2xl font-serif text-brand-text mb-2 flex items-center gap-3">
+                        <UserGroupIcon className="w-6 h-6 text-brand-accent" />
+                        {t('admin.crm.title')}
+                    </h2>
+                    <p className="text-brand-secondary">{t('admin.crm.subtitle')}</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                <KPICard title={t('admin.crm.lifetimeValue')} value={`$${totalSpent.toFixed(2)}`} />
-                <KPICard title={t('admin.crm.totalBookings')} value={customer.totalBookings} />
-                <KPICard title={t('admin.crm.lastBooking')} value={formatDate(lastBookingDate)} />
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="font-bold text-brand-text mb-4">{t('admin.crm.bookingAndPrebookingHistory')}</h3>
-                <div className="overflow-x-auto">
-                     {allBookingsSorted.length > 0 ? (
-                        <>
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-brand-background">
-                                    <tr>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.date')}</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.package')}</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.progressExpiry')}</th>
-                                        <th className="px-4 py-2 text-center text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.status')}</th>
-                                        <th className="px-4 py-2 text-right text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.productManager.actionsLabel')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {paginatedBookings.map(b => (
-                                        <tr key={b.id}>
-                                            <td className="px-4 py-2 whitespace-nowrap">
-                                                <div className="text-sm font-semibold text-brand-text">{formatDate(b.createdAt)}</div>
-                                                <div className="text-xs font-mono text-brand-secondary">{b.bookingCode || '---'}</div>
-                                            </td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap">{renderProgressExpiry(b)}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-center">
-                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${b.isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{b.isPaid ? t('admin.bookingModal.paidStatus') : t('admin.bookingModal.unpaidStatus')}</span>
-                                            </td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-right">
-                                                <div className="flex items-center justify-end">
-                                                    <button onClick={() => handleTogglePaidStatus(b)} title={t('admin.bookingModal.togglePaid')} className={`p-2 rounded-full transition-colors ${b.isPaid ? 'text-brand-success hover:bg-green-100' : 'text-gray-400 hover:bg-gray-200'}`}><CurrencyDollarIcon className="w-5 h-5"/></button>
-                                                    <button onClick={() => handleDeleteRequest(b)} title="Delete Booking" className="p-2 rounded-full text-red-500 hover:bg-red-100"><TrashIcon className="w-5 h-5" /></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                             {totalBookingPages > 1 && (
-                                <div className="mt-4 flex justify-between items-center text-sm">
-                                    <button onClick={() => setBookingsPage(p => Math.max(1, p - 1))} disabled={bookingsPage === 1} className="font-semibold disabled:text-gray-400">&larr; {t('admin.crm.previous')}</button>
-                                    <span>{t('admin.crm.page')} {bookingsPage} {t('admin.crm.of')} {totalBookingPages}</span>
-                                    <button onClick={() => setBookingsPage(p => Math.min(totalBookingPages, p + 1))} disabled={bookingsPage === totalBookingPages} className="font-semibold disabled:text-gray-400">{t('admin.crm.next')} &rarr;</button>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                         <p className="text-sm text-brand-secondary text-center py-4">{t('admin.crm.noCustomers')}</p>
-                    )}
+            {selectedCustomer ? (
+                <CustomerDetailView customer={selectedCustomer} onBack={handleBackToList} onDataChange={onDataChange} />
+            ) : (
+              <>
+                <div className="md:flex justify-between items-center mb-4 gap-4">
+                    <input 
+                        type="text"
+                        placeholder={t('admin.crm.searchPlaceholder')}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full max-w-sm px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-primary focus:border-brand-primary"
+                    />
+                    <div className="bg-white p-2 rounded-lg border border-gray-200 flex items-center gap-2 flex-wrap mt-4 md:mt-0">
+                         <span className="text-sm font-bold text-brand-secondary mr-2">{t('admin.crm.filters.title')}:</span>
+                         <FilterButton filter="all">{t('admin.crm.filters.all')}</FilterButton>
+                         <FilterButton filter="2-left">{t('admin.crm.filters.2left')}</FilterButton>
+                         <FilterButton filter="1-left">{t('admin.crm.filters.1left')}</FilterButton>
+                         <FilterButton filter="completed">{t('admin.crm.filters.completed')}</FilterButton>
+                    </div>
                 </div>
-            </div>
+
+                <CustomerList customers={augmentedAndFilteredCustomers} onSelectCustomer={handleSelectCustomer} />
+              </>
+            )}
         </div>
     );
 };
+
+export default CrmDashboard;
