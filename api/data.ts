@@ -386,7 +386,7 @@ async function addBookingAction(body: Omit<Booking, 'id' | 'createdAt' | 'bookin
       const automationSettings = settingsRows.find(r => r.key === 'automationSettings')?.value as AutomationSettings;
       const bankDetails = settingsRows.find(r => r.key === 'bankDetails')?.value as BankDetails;
 
-      if (automationSettings?.preBookingConfirmation?.enabled && bankDetails) {
+      if (automationSettings?.preBookingConfirmation?.enabled && bankDetails && bankDetails.accountNumber) {
           const bookingWithCamelCase = toCamelCase(insertedRow);
           await emailService.sendPreBookingConfirmationEmail(bookingWithCamelCase, bankDetails);
           await sql`
@@ -399,6 +399,8 @@ async function addBookingAction(body: Omit<Booking, 'id' | 'createdAt' | 'bookin
                   ${bookingWithCamelCase.bookingCode}
               );
           `;
+      } else if (automationSettings?.preBookingConfirmation?.enabled) {
+        console.log(`Skipping pre-booking confirmation email for ${insertedRow.booking_code}: Bank details are not configured.`);
       }
     } catch(emailError) {
       console.warn(`Booking ${insertedRow.booking_code} created, but confirmation email failed to send:`, emailError);
