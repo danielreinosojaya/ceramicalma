@@ -142,6 +142,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
         const { startDate, endDate } = getDatesForPeriod(pendingPeriod, pendingCustomRange);
         return allBookings.filter(b => {
             if (b.isPaid) return false;
+            // FIX: Filter pending bookings by their creation date, not by slot date.
             const creationDate = new Date(b.createdAt);
             return creationDate >= startDate && creationDate <= endDate;
         }).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -379,7 +380,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {pendingBookings.length > 0 ? pendingBookings.map(b => (
                                         <tr key={b.id}>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{new Date(b.createdAt).toLocaleDateString(language)}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{new Date(b.createdAt).toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric'})}</td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">
                                                 <div className="font-semibold">{b.userInfo?.firstName} {b.userInfo?.lastName}</div>
                                                 <div className="text-xs text-brand-secondary">{b.userInfo?.email}</div>

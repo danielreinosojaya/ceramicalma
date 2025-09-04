@@ -6,7 +6,6 @@ import { CalendarOverview } from './CalendarOverview';
 import { ScheduleManager } from './ScheduleManager';
 import { FinancialDashboard } from './FinancialDashboard';
 import { CrmDashboard } from './CrmDashboard';
-// FIX: Import useNotifications to consume the context provided by App.tsx.
 import { useNotifications } from '../../context/NotificationContext';
 import { NotificationBell } from './NotificationBell';
 import { NotificationToast } from './NotificationToast';
@@ -135,7 +134,6 @@ export const AdminConsole: React.FC = () => {
         policies: '', 
         confirmationMessage: { title: '', message: ''}, 
         footerInfo: { address: '', email: '', whatsapp: '', googleMapsLink: '', instagramHandle: '' },
-        // FIX: Add missing 'bankDetails' property to satisfy the AppData type.
         bankDetails: { bankName: '', accountHolder: '', accountNumber: '', accountType: '', taxId: '' }
     };
 
@@ -164,7 +162,6 @@ export const AdminConsole: React.FC = () => {
       case 'financials':
         return <FinancialDashboard bookings={adminData.bookings} onDataChange={handleSync} setNavigateTo={setNavigateTo} />;
       case 'customers':
-        // FIX: The onDataChange prop is required by CrmDashboard to trigger data refreshes.
         return <CrmDashboard bookings={adminData.bookings} navigateToEmail={targetId} onDataChange={handleSync} />;
       case 'inquiries':
         return <InquiryManager inquiries={adminData.inquiries} onDataChange={handleSync} navigateToId={targetId} />;
