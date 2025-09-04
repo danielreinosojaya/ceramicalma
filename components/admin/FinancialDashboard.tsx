@@ -142,9 +142,12 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
         const { startDate, endDate } = getDatesForPeriod(pendingPeriod, pendingCustomRange);
         return allBookings.filter(b => {
             if (b.isPaid) return false;
-            // FIX: Filter pending bookings by their creation date, not by slot date.
-            const creationDate = new Date(b.createdAt);
-            return creationDate >= startDate && creationDate <= endDate;
+            
+            // A pre-reservation is relevant if any of its scheduled classes fall within the date range.
+            return b.slots.some(slot => {
+                const slotDate = new Date(slot.date + 'T00:00:00'); 
+                return slotDate >= startDate && slotDate <= endDate;
+            });
         }).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }, [pendingPeriod, pendingCustomRange, allBookings]);
 
@@ -192,9 +195,16 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
 
         if (!lineCtx || !doughnutCtx || !paymentMethodCtx || activeTab !== 'summary') return;
         
-        Chart.getChart(lineChartRef.current)?.destroy();
-        Chart.getChart(doughnutChartRef.current)?.destroy();
-        Chart.getChart(paymentMethodChartRef.current)?.destroy();
+        if (lineChartRef.current && Chart.getChart(lineChartRef.current)) {
+            Chart.getChart(lineChartRef.current)!.destroy();
+        }
+        if (doughnutChartRef.current && Chart.getChart(doughnutChartRef.current)) {
+            Chart.getChart(doughnutChartRef.current)!.destroy();
+        }
+        if (paymentMethodChartRef.current && Chart.getChart(paymentMethodChartRef.current)) {
+            Chart.getChart(paymentMethodChartRef.current)!.destroy();
+        }
+
 
         // Line Chart Data
         const revenueByDate = summaryBookings.reduce((acc, b) => {

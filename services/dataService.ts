@@ -148,7 +148,10 @@ export const deleteInstructor = (id: number): Promise<{ success: boolean, requir
 
 // Inquiries
 export const getGroupInquiries = async (): Promise<GroupInquiry[]> => {
-    const rawInquiries = await getData<any[]>('groupInquiries');
+    const rawInquiries = await getData<any[] | null>('groupInquiries');
+    if (!rawInquiries) {
+        return [];
+    }
     return rawInquiries.map(parseGroupInquiry);
 };
 export const addGroupInquiry = async (inquiryData: Omit<GroupInquiry, 'id' | 'status' | 'createdAt'>): Promise<GroupInquiry> => {

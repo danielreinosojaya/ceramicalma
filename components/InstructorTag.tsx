@@ -1,8 +1,9 @@
 
 
+
 import React, { useMemo } from 'react';
 import type { Instructor } from '../types';
-import { PALETTE_COLORS } from '../constants.ts';
+import { PALETTE_COLORS } from '../constants';
 import { UserIcon } from './icons/UserIcon';
 
 interface InstructorTagProps {

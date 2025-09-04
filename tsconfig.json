@@ -10,16 +10,14 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
     "paths": {
-    
-      "@/types": ["./types.ts"]
+      "@/*": ["./*"]
     }
   },
   "include": [
-    "src",
-    "api",
-    "constants.ts",
-    "types.ts"
+    "./**/*.ts",
+    "./**/*.tsx"
   ],
   "exclude": ["node_modules"]
 }

@@ -19,7 +19,7 @@ interface InquiryManagerProps {
     onDataChange: () => void;
 }
 
-export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, inquiries, onDataChange }) => {
+export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, inquiries = [], onDataChange }) => {
     const { t, language } = useLanguage();
     const [expandedInquiryId, setExpandedInquiryId] = useState<string | null>(null);
     const [highlightedInquiryId, setHighlightedInquiryId] = useState<string | null>(null);
