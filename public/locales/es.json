@@ -600,6 +600,20 @@
       "classStatusCompleted": "Completada",
       "classStatusUpcoming": "Próxima",
       "completedOf": "{{completed}} de {{total}} completadas",
+      "allCustomersTab": "Todos los Clientes",
+      "openStudioTab": "Open Studio",
+      "openStudio": {
+          "status": "Estado",
+          "startDate": "Fecha de Inicio",
+          "expiryDate": "Fecha de Vencimiento",
+          "purchaseDate": "Fecha de Compra",
+          "remainingTime": "Tiempo Restante",
+          "statusActive": "Activa",
+          "statusExpired": "Vencida",
+          "statusPendingPayment": "Pendiente de Pago",
+          "noSubscriptions": "No se encontraron suscripciones de Open Studio.",
+          "d": "d"
+      },
       "filters": {
         "title": "Filtros Avanzados",
         "classesRemaining": "Clases Restantes",

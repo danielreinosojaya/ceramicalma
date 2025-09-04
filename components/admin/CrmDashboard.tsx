@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import type { Customer, Booking, ClassPackage, TimeSlot, Product } from '../../types';
+import type { Customer, Booking, ClassPackage, TimeSlot } from '../../types';
 import * as dataService from '../../services/dataService';
 import { useLanguage } from '../../context/LanguageContext';
 import { CustomerList } from './CustomerList';
 import { CustomerDetailView } from './CustomerDetailView';
 import { UserGroupIcon } from '../icons/UserGroupIcon';
+import { OpenStudioView } from './OpenStudioView';
 
 interface CrmDashboardProps {
     navigateToEmail?: string;
@@ -78,7 +79,7 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterByClassesRemaining, setFilterByClassesRemaining] = useState<FilterType>('all');
-
+    const [activeTab, setActiveTab] = useState<'all' | 'openStudio'>('all');
 
     const loadCustomers = useCallback(() => {
         setCustomers(dataService.getCustomers(bookings));
@@ -141,6 +142,13 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
     const handleSelectCustomer = (customer: Customer) => {
         setSelectedCustomer(customer);
     };
+    
+    const handleNavigateToCustomer = (email: string) => {
+        const customer = customers.find(c => c.userInfo.email === email);
+        if (customer) {
+            setSelectedCustomer(customer);
+        }
+    };
 
     const handleBackToList = () => {
         setSelectedCustomer(null);
@@ -175,24 +183,48 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
                 <CustomerDetailView customer={selectedCustomer} onBack={handleBackToList} onDataChange={onDataChange} />
             ) : (
               <>
-                <div className="md:flex justify-between items-center mb-4 gap-4">
-                    <input 
-                        type="text"
-                        placeholder={t('admin.crm.searchPlaceholder')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full max-w-sm px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-primary focus:border-brand-primary"
-                    />
-                    <div className="bg-white p-2 rounded-lg border border-gray-200 flex items-center gap-2 flex-wrap mt-4 md:mt-0">
-                         <span className="text-sm font-bold text-brand-secondary mr-2">{t('admin.crm.filters.title')}:</span>
-                         <FilterButton filter="all">{t('admin.crm.filters.all')}</FilterButton>
-                         <FilterButton filter="2-left">{t('admin.crm.filters.2left')}</FilterButton>
-                         <FilterButton filter="1-left">{t('admin.crm.filters.1left')}</FilterButton>
-                         <FilterButton filter="completed">{t('admin.crm.filters.completed')}</FilterButton>
-                    </div>
+                <div className="border-b border-gray-200 mb-4">
+                    <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                        <button
+                            onClick={() => setActiveTab('all')}
+                            className={`px-1 py-3 text-sm font-semibold border-b-2 ${activeTab === 'all' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                        >
+                            {t('admin.crm.allCustomersTab')}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('openStudio')}
+                            className={`px-1 py-3 text-sm font-semibold border-b-2 ${activeTab === 'openStudio' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                        >
+                            {t('admin.crm.openStudioTab')}
+                        </button>
+                    </nav>
                 </div>
-
-                <CustomerList customers={augmentedAndFilteredCustomers} onSelectCustomer={handleSelectCustomer} />
+                
+                {activeTab === 'all' && (
+                    <div className="animate-fade-in">
+                        <div className="md:flex justify-between items-center mb-4 gap-4">
+                            <input 
+                                type="text"
+                                placeholder={t('admin.crm.searchPlaceholder')}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full max-w-sm px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-primary focus:border-brand-primary"
+                            />
+                            <div className="bg-white p-2 rounded-lg border border-gray-200 flex items-center gap-2 flex-wrap mt-4 md:mt-0">
+                                <span className="text-sm font-bold text-brand-secondary mr-2">{t('admin.crm.filters.title')}:</span>
+                                <FilterButton filter="all">{t('admin.crm.filters.all')}</FilterButton>
+                                <FilterButton filter="2-left">{t('admin.crm.filters.2left')}</FilterButton>
+                                <FilterButton filter="1-left">{t('admin.crm.filters.1left')}</FilterButton>
+                                <FilterButton filter="completed">{t('admin.crm.filters.completed')}</FilterButton>
+                            </div>
+                        </div>
+                        <CustomerList customers={augmentedAndFilteredCustomers} onSelectCustomer={handleSelectCustomer} />
+                    </div>
+                )}
+                
+                {activeTab === 'openStudio' && (
+                    <OpenStudioView bookings={bookings} onNavigateToCustomer={handleNavigateToCustomer} />
+                )}
               </>
             )}
         </div>
