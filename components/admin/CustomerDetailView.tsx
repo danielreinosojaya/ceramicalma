@@ -83,26 +83,43 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
 
     const { userInfo, totalSpent, lastBookingDate, bookings } = customer;
 
-    const paidSubscriptions = useMemo(() => 
-        bookings
-            .filter(b => b.isPaid && b.productType === 'OPEN_STUDIO_SUBSCRIPTION')
-            .sort((a,b) => new Date(b.paymentDetails!.receivedAt).getTime() - new Date(a.paymentDetails!.receivedAt).getTime()),
+    const allBookingsSorted = useMemo(() => 
+        [...bookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
         [bookings]
     );
 
-    const nonSubscriptionBookings = useMemo(() => 
-        bookings.filter(b => b.productType !== 'OPEN_STUDIO_SUBSCRIPTION'),
-        [bookings]
-    );
-
-    const paidBookings = useMemo(() => bookings.filter(b => b.isPaid), [bookings]);
+    const paidBookings = useMemo(() => 
+        bookings.filter(b => b.isPaid)
+        .sort((a,b) => new Date(b.paymentDetails!.receivedAt).getTime() - new Date(a.paymentDetails!.receivedAt).getTime()),
+    [bookings]);
 
     // Pagination calculations
     const totalPaymentPages = Math.ceil(paidBookings.length / recordsPerPage);
     const paginatedPaidBookings = paidBookings.slice((paymentsPage - 1) * recordsPerPage, paymentsPage * recordsPerPage);
 
-    const totalBookingPages = Math.ceil(nonSubscriptionBookings.length / recordsPerPage);
-    const paginatedBookings = nonSubscriptionBookings.slice((bookingsPage - 1) * recordsPerPage, bookingsPage * recordsPerPage);
+    const totalBookingPages = Math.ceil(allBookingsSorted.length / recordsPerPage);
+    const paginatedBookings = allBookingsSorted.slice((bookingsPage - 1) * recordsPerPage, bookingsPage * recordsPerPage);
+
+    const renderProgressExpiry = (booking: Booking) => {
+        if (booking.productType === 'CLASS_PACKAGE' && booking.slots && booking.slots.length > 0) {
+            const completed = booking.slots.filter(s => getSlotDateTime(s) < now).length;
+            const total = (booking.product as ClassPackage).classes;
+            return <span className="text-sm">{t('admin.crm.completedOf', { completed, total })}</span>
+        }
+        if (booking.productType === 'OPEN_STUDIO_SUBSCRIPTION' && booking.isPaid && booking.paymentDetails) {
+            const startDate = new Date(booking.paymentDetails.receivedAt);
+            const expiryDate = new Date(startDate);
+            const durationDays = (booking.product as OpenStudioSubscription).details.durationDays;
+            expiryDate.setDate(startDate.getDate() + durationDays);
+            const isActive = now < expiryDate;
+            return (
+                 <span className={`text-sm ${isActive ? 'text-brand-text' : 'text-gray-500'}`}>
+                    {t('admin.crm.expiresOn', { date: formatDate(expiryDate) })}
+                </span>
+            )
+        }
+        return <span className="text-sm text-gray-400">N/A</span>;
+    };
 
     return (
         <div className="animate-fade-in">
@@ -130,48 +147,6 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                 <KPICard title={t('admin.crm.lifetimeValue')} value={`$${totalSpent.toFixed(2)}`} />
                 <KPICard title={t('admin.crm.totalBookings')} value={customer.totalBookings} />
                 <KPICard title={t('admin.crm.lastBooking')} value={formatDate(lastBookingDate)} />
-            </div>
-
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
-                <h3 className="font-bold text-brand-text mb-4">{t('admin.crm.subscriptions')}</h3>
-                {paidSubscriptions.length > 0 ? (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-brand-background">
-                                <tr>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.package')}</th>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.purchasedOn')}</th>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.expiresOn')}</th>
-                                    <th className="px-4 py-2 text-center text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.status')}</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {paidSubscriptions.map(sub => {
-                                    const startDate = new Date(sub.paymentDetails!.receivedAt);
-                                    const expiryDate = new Date(startDate);
-                                    const durationDays = (sub.product as OpenStudioSubscription).details.durationDays;
-                                    expiryDate.setDate(startDate.getDate() + durationDays);
-                                    const isActive = now < expiryDate;
-
-                                    return (
-                                        <tr key={sub.id}>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{sub.product.name}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(startDate)}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(expiryDate)}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-center">
-                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                                    {isActive ? t('admin.crm.statusActive') : t('admin.crm.statusExpired')}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                ) : (
-                    <p className="text-sm text-brand-secondary text-center py-4">{t('admin.crm.noSubscriptions')}</p>
-                )}
             </div>
             
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
@@ -212,16 +187,16 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
             </div>
             
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="font-bold text-brand-text mb-4">{t('admin.crm.bookingHistory')}</h3>
+                <h3 className="font-bold text-brand-text mb-4">{t('admin.crm.bookingAndPrebookingHistory')}</h3>
                 <div className="overflow-x-auto">
-                     {nonSubscriptionBookings.length > 0 ? (
+                     {allBookingsSorted.length > 0 ? (
                         <>
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-brand-background">
                                     <tr>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.date')}</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.package')}</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.bookingCode')}</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.progressExpiry')}</th>
                                         <th className="px-4 py-2 text-center text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.status')}</th>
                                         <th className="px-4 py-2 text-right text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.productManager.actionsLabel')}</th>
                                     </tr>
@@ -229,9 +204,12 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {paginatedBookings.map(b => (
                                         <tr key={b.id}>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(b.createdAt)}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap">
+                                                <div className="text-sm font-semibold text-brand-text">{formatDate(b.createdAt)}</div>
+                                                <div className="text-xs font-mono text-brand-secondary">{b.bookingCode || '---'}</div>
+                                            </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm font-mono text-brand-secondary">{b.bookingCode || '---'}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap">{renderProgressExpiry(b)}</td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-center">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${b.isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{b.isPaid ? t('admin.bookingModal.paidStatus') : t('admin.bookingModal.unpaidStatus')}</span>
                                             </td>

@@ -138,23 +138,12 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
         });
     }, [summaryPeriod, summaryCustomRange, allBookings]);
 
-     const pendingBookings = useMemo(() => {
+    const pendingBookings = useMemo(() => {
         const { startDate, endDate } = getDatesForPeriod(pendingPeriod, pendingCustomRange);
         return allBookings.filter(b => {
-            if (b.isPaid) {
-                return false;
-            }
-            // For bookings with slots (classes), check if any slot falls in the range.
-            if (b.slots && b.slots.length > 0) {
-                return b.slots.some(slot => {
-                    const slotDate = new Date(slot.date + 'T00:00:00');
-                    return slotDate >= startDate && slotDate <= endDate;
-                });
-            }
-            // For bookings without slots (subscriptions), check the creation date.
+            if (b.isPaid) return false;
             const creationDate = new Date(b.createdAt);
             return creationDate >= startDate && creationDate <= endDate;
-            
         }).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }, [pendingPeriod, pendingCustomRange, allBookings]);
 

@@ -38,10 +38,12 @@ const getRemainingClassesInfo = (customer: Customer): RemainingClassesInfo | nul
     
     // Find packages that are still within their 30-day validity period.
     const validPackages = customer.bookings.filter(booking => {
-        if (booking.productType !== 'CLASS_PACKAGE' || booking.slots.length === 0) return false;
+        if (booking.productType !== 'CLASS_PACKAGE' || !booking.slots || booking.slots.length === 0) return false;
         
         // The package validity is 30 days from the *first* scheduled class.
         const firstClassDate = booking.slots.map(getSlotDateTime).sort((a,b) => a.getTime() - b.getTime())[0];
+        if (!firstClassDate) return false;
+        
         const expiryDate = new Date(firstClassDate);
         expiryDate.setDate(expiryDate.getDate() + 30);
         
