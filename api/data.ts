@@ -227,6 +227,9 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
         case 'updateBooking':
              await sql`UPDATE bookings SET user_info = ${JSON.stringify(body.userInfo)}, price = ${body.price} WHERE id = ${body.id}`;
             break;
+        case 'deleteBooking':
+            await sql`DELETE FROM bookings WHERE id = ${body.bookingId}`;
+            break;
         case 'removeBookingSlot':
             const { bookingId: removeId, slotToRemove } = body;
             const { rows: [bookingToRemoveFrom] } = await sql`SELECT slots FROM bookings WHERE id = ${removeId}`;

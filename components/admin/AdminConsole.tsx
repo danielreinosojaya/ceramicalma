@@ -164,7 +164,8 @@ export const AdminConsole: React.FC = () => {
       case 'financials':
         return <FinancialDashboard bookings={adminData.bookings} onDataChange={handleSync} setNavigateTo={setNavigateTo} />;
       case 'customers':
-        return <CrmDashboard bookings={adminData.bookings} navigateToEmail={targetId} />;
+        // FIX: The onDataChange prop is required by CrmDashboard to trigger data refreshes.
+        return <CrmDashboard bookings={adminData.bookings} navigateToEmail={targetId} onDataChange={handleSync} />;
       case 'inquiries':
         return <InquiryManager inquiries={adminData.inquiries} onDataChange={handleSync} navigateToId={targetId} />;
       case 'communications':

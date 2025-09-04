@@ -9,6 +9,7 @@ import { UserGroupIcon } from '../icons/UserGroupIcon';
 interface CrmDashboardProps {
     navigateToEmail?: string;
     bookings: Booking[];
+    onDataChange: () => void;
 }
 
 export type FilterType = 'all' | '1-left' | '2-left' | 'completed';
@@ -76,7 +77,7 @@ const getRemainingClassesInfo = (customer: Customer): RemainingClassesInfo | nul
 };
 
 
-export const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings }) => {
+export const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, onDataChange }) => {
     const { t } = useLanguage();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -93,9 +94,9 @@ export const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, boo
         loadCustomers();
         setLoading(false);
     }, [loadCustomers]);
-
+    
     useEffect(() => {
-        if (navigateToEmail && customers.length > 0) {
+        if (navigateToEmail) {
             const customer = customers.find(c => c.userInfo.email === navigateToEmail);
             if (customer) {
                 setSelectedCustomer(customer);
@@ -103,6 +104,14 @@ export const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, boo
             }
         }
     }, [navigateToEmail, customers]);
+
+    useEffect(() => {
+      if (selectedCustomer) {
+        const updatedCustomer = dataService.getCustomers(bookings).find(c => c.email === selectedCustomer.email);
+        setSelectedCustomer(updatedCustomer || null);
+      }
+    }, [bookings, selectedCustomer]);
+
 
     const augmentedAndFilteredCustomers = useMemo((): AugmentedCustomer[] => {
         const augmented = customers.map(c => ({
@@ -169,7 +178,7 @@ export const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, boo
             </div>
 
             {selectedCustomer ? (
-                <CustomerDetailView customer={selectedCustomer} onBack={handleBackToList} />
+                <CustomerDetailView customer={selectedCustomer} onBack={handleBackToList} onDataChange={onDataChange} />
             ) : (
               <>
                 <div className="md:flex justify-between items-center mb-4 gap-4">

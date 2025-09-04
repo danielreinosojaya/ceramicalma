@@ -67,7 +67,8 @@
     "wizard": {
       "stepMonth": "Selecciona Mes",
       "stepDay": "Selecciona Día",
-      "stepTime": "Selecciona Hora"
+      "stepTime": "Selecciona Hora",
+      "backButton": "Atrás"
     }
   },
   "products": {
@@ -600,7 +601,13 @@
         "2left": "2 Clases Restantes",
         "1left": "1 Clase Restante",
         "completed": "Paquete Completado"
-      }
+      },
+      "deleteBookingTitle": "Eliminar Reserva",
+      "deleteBookingMessage": "¿Estás seguro de que quieres eliminar permanentemente la reserva {{code}}? Esta acción no se puede deshacer.",
+      "page": "Página",
+      "of": "de",
+      "previous": "Anterior",
+      "next": "Siguiente"
     },
     "settingsManager": {
       "title": "Configuración General",
