@@ -16,7 +16,7 @@ import { CalendarIcon } from '../icons/CalendarIcon';
 import { CubeIcon } from '../icons/CubeIcon';
 import { CogIcon } from '../icons/CogIcon';
 import { SettingsManager } from './SettingsManager';
-import type { AdminTab, Notification, Product, Booking, GroupInquiry, Instructor, ScheduleOverrides, DayKey, AvailableSlot, ClassCapacity, CapacityMessageSettings, Announcement, AppData } from '../../types';
+import type { AdminTab, Notification, Product, Booking, GroupInquiry, Instructor, ScheduleOverrides, DayKey, AvailableSlot, ClassCapacity, CapacityMessageSettings, Announcement, AppData, BankDetails } from '../../types';
 import { ScheduleSettingsManager } from './ScheduleSettingsManager';
 import { CalendarEditIcon } from '../icons/CalendarEditIcon';
 import { InquiryManager } from './InquiryManager';
@@ -134,7 +134,9 @@ export const AdminConsole: React.FC = () => {
         ...adminData, 
         policies: '', 
         confirmationMessage: { title: '', message: ''}, 
-        footerInfo: { address: '', email: '', whatsapp: '', googleMapsLink: '', instagramHandle: '' }
+        footerInfo: { address: '', email: '', whatsapp: '', googleMapsLink: '', instagramHandle: '' },
+        // FIX: Add missing 'bankDetails' property to satisfy the AppData type.
+        bankDetails: { bankName: '', accountHolder: '', accountNumber: '', accountType: '', taxId: '' }
     };
 
     switch (activeTab) {
@@ -162,7 +164,8 @@ export const AdminConsole: React.FC = () => {
       case 'financials':
         return <FinancialDashboard bookings={adminData.bookings} onDataChange={handleSync} setNavigateTo={setNavigateTo} />;
       case 'customers':
-        return <CrmDashboard bookings={adminData.bookings} navigateToEmail={targetId} />;
+        // FIX: The onDataChange prop is required by CrmDashboard to trigger data refreshes.
+        return <CrmDashboard bookings={adminData.bookings} navigateToEmail={targetId} onDataChange={handleSync} />;
       case 'inquiries':
         return <InquiryManager inquiries={adminData.inquiries} onDataChange={handleSync} navigateToId={targetId} />;
       case 'communications':

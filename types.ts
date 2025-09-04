@@ -1,5 +1,6 @@
 
 
+
 export type AppView = 'welcome' | 'packages' | 'intro_classes' | 'schedule' | 'group_experience' | 'couples_experience' | 'summary';
 
 export type DayKey = 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
@@ -318,6 +319,15 @@ export interface AutomationSettings {
     incentiveRenewal: { enabled: boolean; value: number; unit: 'classes' };
 }
 
+export interface BankDetails {
+  bankName: string;
+  accountHolder: string;
+  accountNumber: string;
+  accountType: string;
+  taxId: string; // e.g., RUT, CUIT, CBU
+  details?: string; // For SWIFT, IBAN, etc.
+}
+
 export interface AppData {
   products: Product[];
   instructors: Instructor[];
@@ -330,6 +340,7 @@ export interface AppData {
   policies: string;
   confirmationMessage: ConfirmationMessage;
   footerInfo: FooterInfo;
+  bankDetails: BankDetails;
 }
 
 export interface AdminData extends Omit<AppData, 'policies' | 'confirmationMessage' | 'footerInfo'> {

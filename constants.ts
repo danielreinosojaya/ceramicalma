@@ -1,11 +1,12 @@
-import type { Product, AvailableSlot, Instructor, ConfirmationMessage, ClassCapacity, CapacityMessageSettings, DayKey, FooterInfo, AutomationSettings } from '@/types';
+import type { Product, AvailableSlot, Instructor, ConfirmationMessage, ClassCapacity, CapacityMessageSettings, DayKey, FooterInfo, AutomationSettings, BankDetails } from '@/types';
 
 export const PALETTE_COLORS = [
-    { name: 'primary', bg: 'bg-brand-primary', text: 'text-white' }, // Slate Blue
-    { name: 'accent', bg: 'bg-brand-accent', text: 'text-brand-text' }, // Rosy Beige
-    { name: 'secondary', bg: 'bg-brand-secondary', text: 'text-white' }, // Earthy Taupe
-    { name: 'stone', bg: 'bg-brand-stone', text: 'text-brand-text' }, // Cool Gray
-    { name: 'border', bg: 'bg-brand-border', text: 'text-brand-text' } // Sage Gray
+    { name: 'sky', bg: 'bg-sky-200', text: 'text-sky-800' },
+    { name: 'teal', bg: 'bg-teal-200', text: 'text-teal-800' },
+    { name: 'rose', bg: 'bg-rose-200', text: 'text-rose-800' },
+    { name: 'indigo', bg: 'bg-indigo-200', text: 'text-indigo-800' },
+    { name: 'amber', bg: 'bg-amber-200', text: 'text-amber-800' },
+    { name: 'secondary', bg: 'bg-gray-200', text: 'text-gray-600' }
 ];
 
 export const COUNTRIES = [
@@ -141,9 +142,9 @@ export const DEFAULT_PRODUCTS: Product[] = [
 ];
 
 export const DEFAULT_INSTRUCTORS: Instructor[] = [
-  { id: 1, name: "Caro", colorScheme: "primary" },
-  { id: 2, name: "Ana", colorScheme: "accent" },
-  { id: 3, name: "Lucia", colorScheme: "secondary" }
+  { id: 1, name: "Caro", colorScheme: "rose" },
+  { id: 2, name: "Ana", colorScheme: "teal" },
+  { id: 3, name: "Lucia", colorScheme: "amber" }
 ];
 
 export const DEFAULT_AVAILABLE_SLOTS_BY_DAY: Record<DayKey, AvailableSlot[]> = {
@@ -193,4 +194,13 @@ export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
     paymentReceipt: { enabled: true },
     classReminder: { enabled: true, value: 24, unit: 'hours' },
     incentiveRenewal: { enabled: false, value: 1, unit: 'classes' }
+};
+
+export const DEFAULT_BANK_DETAILS: BankDetails = {
+    bankName: "",
+    accountHolder: "",
+    accountNumber: "",
+    accountType: "",
+    taxId: "",
+    details: ""
 };

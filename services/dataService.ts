@@ -1,10 +1,8 @@
-
-
 import type { 
     Product, Booking, ScheduleOverrides, Notification, Announcement, Instructor, 
     ConfirmationMessage, ClassCapacity, EnrichedAvailableSlot, CapacityMessageSettings, 
     UITexts, FooterInfo, DayKey, AvailableSlot, GroupInquiry, AddBookingResult, 
-    PaymentDetails, AttendanceStatus, ClientNotification, AutomationSettings, ClassPackage, IntroductoryClass, OpenStudioSubscription, UserInfo, Customer, EnrichedIntroClassSession, BackgroundSettings, AppData
+    PaymentDetails, AttendanceStatus, ClientNotification, AutomationSettings, ClassPackage, IntroductoryClass, OpenStudioSubscription, UserInfo, Customer, EnrichedIntroClassSession, BackgroundSettings, AppData, BankDetails
 } from '../types';
 import { DAY_NAMES } from '../constants.ts';
 
@@ -130,7 +128,7 @@ export const rescheduleBookingSlot = async (bookingId: string, oldSlot: any, new
 };
 export const deleteBookingsInDateRange = (startDate: Date, endDate: Date): Promise<{ success: boolean }> => postAction('deleteBookingsInDateRange', { startDate, endDate });
 export const updateAttendanceStatus = (bookingId: string, slot: any, status: AttendanceStatus): Promise<{ success: boolean }> => postAction('updateAttendanceStatus', { bookingId, slot, status });
-
+export const deleteBooking = (bookingId: string): Promise<{ success: boolean }> => postAction('deleteBooking', { bookingId });
 
 // Availability & Schedule
 export const getAvailability = (): Promise<Record<DayKey, AvailableSlot[]>> => getData('availability');
@@ -182,9 +180,11 @@ export const updateFooterInfo = (info: FooterInfo): Promise<{ success: boolean }
 export const getAutomationSettings = (): Promise<AutomationSettings> => getData('automationSettings');
 export const updateAutomationSettings = (settings: AutomationSettings): Promise<{ success: boolean }> => setData('automationSettings', settings);
 export const getClientNotifications = (): Promise<ClientNotification[]> => getData('clientNotifications');
-export const generateScheduledNotifications = (): Promise<{ success: boolean }> => postAction('generateScheduledNotifications', {});
+export const triggerScheduledNotifications = (): Promise<{ success: boolean }> => postAction('triggerScheduledNotifications', {});
 export const getBackgroundSettings = (): Promise<BackgroundSettings> => getData('backgroundSettings');
 export const updateBackgroundSettings = (settings: BackgroundSettings): Promise<{ success: boolean }> => setData('backgroundSettings', settings);
+export const getBankDetails = (): Promise<BankDetails> => getData('bankDetails');
+export const updateBankDetails = (details: BankDetails): Promise<{ success: boolean }> => setData('bankDetails', details);
 
 // --- Client-side Calculations and Utilities ---
 

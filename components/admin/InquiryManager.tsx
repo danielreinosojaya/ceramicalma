@@ -47,6 +47,21 @@ export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, in
         setExpandedInquiryId(prevId => (prevId === id ? null : id));
     };
 
+    const formatDate = (dateString: string | null | undefined, options: Intl.DateTimeFormatOptions) => {
+        if (!dateString) {
+            // FIX: The `t` function expects an options object as a second argument, not a string. Using `||` for fallback.
+            return t('admin.inquiryManager.notApplicable') || 'N/A';
+        }
+        // Date strings from Postgres DATE type are like 'YYYY-MM-DD'. Appending time makes it UTC midnight, avoiding timezone shifts.
+        // TIMESTAMPTZ strings are full ISO strings and are handled correctly by new Date().
+        const date = new Date(dateString.includes('T') ? dateString : `${dateString}T00:00:00`);
+        if (isNaN(date.getTime())) {
+            // FIX: The `t` function expects an options object as a second argument, not a string. Using `||` for fallback.
+            return t('admin.inquiryManager.invalidDate') || 'Invalid Date';
+        }
+        return date.toLocaleDateString(language, options);
+    };
+
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
@@ -79,7 +94,7 @@ export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, in
                                 className={`cursor-pointer transition-colors duration-500 ${highlightedInquiryId === inquiry.id ? 'bg-yellow-100' : 'hover:bg-gray-50'}`}
                             >
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-text">
-                                    {new Date(inquiry.createdAt).toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                    {formatDate(inquiry.createdAt, { year: 'numeric', month: 'short', day: 'numeric' })}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center gap-2">
@@ -95,7 +110,7 @@ export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, in
                                     {inquiry.participants}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-text">
-                                    {inquiry.tentativeDate ? new Date(inquiry.tentativeDate + 'T00:00:00').toLocaleDateString(language, { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                                    {formatDate(inquiry.tentativeDate, { month: 'long', day: 'numeric', year: 'numeric' })}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                      <select

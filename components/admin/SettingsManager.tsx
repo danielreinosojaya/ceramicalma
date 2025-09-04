@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import * as dataService from '../../services/dataService';
 import { CogIcon } from '../icons/CogIcon';
-import type { ConfirmationMessage, ClassCapacity, CapacityMessageSettings, CapacityThreshold, UITexts, FooterInfo, AutomationSettings } from '../../types';
+import type { ConfirmationMessage, ClassCapacity, CapacityMessageSettings, CapacityThreshold, UITexts, FooterInfo, AutomationSettings, BankDetails } from '../../types';
 import { DocumentTextIcon } from '../icons/DocumentTextIcon';
 import { SparklesIcon } from '../icons/SparklesIcon';
+import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
+import { ExclamationTriangleIcon } from '../icons/ExclamationTriangleIcon';
 
 const SettingsInputField: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string }> = ({ label, ...props }) => (
     <div>
@@ -61,6 +63,26 @@ const CommunicationAutomationManager: React.FC = () => {
             <p className="text-xs text-brand-secondary mb-4">
                 {t('admin.settingsManager.automation.subtitle')}
             </p>
+
+            <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-800 p-4 rounded-r-lg mb-6">
+                <div className="flex">
+                    <div className="flex-shrink-0">
+                        <ExclamationTriangleIcon className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <div className="ml-3">
+                        <h3 className="text-sm font-bold">{t('admin.settingsManager.automation.envVarTitle')}</h3>
+                        <div className="mt-2 text-sm">
+                            <p>{t('admin.settingsManager.automation.envVarMessage')}</p>
+                            <ul className="list-disc list-inside mt-2 space-y-1 font-mono text-xs">
+                                <li>RESEND_API_KEY</li>
+                                <li>EMAIL_FROM</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm">{t('admin.settingsManager.automation.preBookingConfirmation')}</span>
@@ -114,6 +136,62 @@ const CommunicationAutomationManager: React.FC = () => {
                     className="bg-brand-primary text-white font-bold py-2 px-6 rounded-lg hover:bg-brand-accent"
                 >
                     {t('admin.settingsManager.automation.saveButton')}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const BankDetailsEditor: React.FC = () => {
+    const { t } = useLanguage();
+    const [details, setDetails] = useState<BankDetails | null>(null);
+    const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        const fetchDetails = async () => setDetails(await dataService.getBankDetails());
+        fetchDetails();
+    }, []);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (!details) return;
+        const { name, value } = e.target;
+        setDetails(prev => ({ ...prev!, [name]: value }));
+    };
+
+    const handleSave = async () => {
+        if (!details) return;
+        await dataService.updateBankDetails(details);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+    };
+
+    if (!details) return <div>Loading...</div>;
+    
+    const isSaveDisabled = !details.bankName || !details.accountHolder || !details.accountNumber;
+
+    return (
+        <div className="bg-brand-background p-4 rounded-lg">
+            <h3 className="block text-sm font-bold text-brand-secondary mb-1">{t('admin.settingsManager.bankDetails.title')}</h3>
+            <p className="text-xs text-brand-secondary mb-4">{t('admin.settingsManager.bankDetails.subtitle')}</p>
+            <div className="space-y-4">
+                <SettingsInputField name="bankName" label={`${t('admin.settingsManager.bankDetails.bankName')} ${t('admin.settingsManager.requiredFieldIndicator')}`} value={details.bankName} onChange={handleChange} required />
+                <SettingsInputField name="accountHolder" label={`${t('admin.settingsManager.bankDetails.accountHolder')} ${t('admin.settingsManager.requiredFieldIndicator')}`} value={details.accountHolder} onChange={handleChange} required />
+                <SettingsInputField name="accountNumber" label={`${t('admin.settingsManager.bankDetails.accountNumber')} ${t('admin.settingsManager.requiredFieldIndicator')}`} value={details.accountNumber} onChange={handleChange} required />
+                <SettingsInputField name="accountType" label={t('admin.settingsManager.bankDetails.accountType')} value={details.accountType} onChange={handleChange} />
+                <SettingsInputField name="taxId" label={t('admin.settingsManager.bankDetails.taxId')} value={details.taxId} onChange={handleChange} />
+                <div>
+                    <label htmlFor="details" className="block text-xs font-bold text-gray-500 mb-1">{t('admin.settingsManager.bankDetails.details')}</label>
+                    <textarea id="details" name="details" value={details.details || ''} onChange={handleChange} rows={3} className="w-full p-2 border border-gray-300 rounded-lg"/>
+                </div>
+            </div>
+            <div className="mt-4 flex justify-end items-center gap-4">
+                {saved && (<p className="text-sm font-semibold text-brand-success animate-fade-in">{t('admin.settingsManager.bankDetails.savedMessage')}</p>)}
+                <button 
+                  onClick={handleSave} 
+                  disabled={isSaveDisabled}
+                  className="bg-brand-primary text-white font-bold py-2 px-6 rounded-lg hover:bg-brand-accent disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                    {t('admin.settingsManager.bankDetails.saveButton')}
                 </button>
             </div>
         </div>
@@ -494,6 +572,21 @@ export const SettingsManager: React.FC = () => {
                                 <div className="absolute top-0 left-0 h-full w-0.5 bg-brand-primary/20 rounded-full"></div>
                                 <div className="space-y-6">
                                     <CommunicationAutomationManager />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-start gap-4">
+                        <CurrencyDollarIcon className="w-8 h-8 text-brand-primary mt-1" />
+                        <div className="flex-grow">
+                            <h3 className="text-xl font-semibold text-brand-text">{t('admin.settingsManager.paymentSettings.title')}</h3>
+                             <p className="text-brand-secondary text-sm mb-6">{t('admin.settingsManager.paymentSettings.subtitle')}</p>
+                            <div className="relative pl-6">
+                                <div className="absolute top-0 left-0 h-full w-0.5 bg-brand-primary/20 rounded-full"></div>
+                                <div className="space-y-6">
+                                    <BankDetailsEditor />
                                 </div>
                             </div>
                         </div>

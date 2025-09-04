@@ -1,13 +1,13 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { sql } from '@vercel/postgres';
 import { seedDatabase, ensureTablesExist } from './db.js';
+import * as emailService from './emailService.js';
 import type { 
     Product, Booking, ScheduleOverrides, Notification, Announcement, Instructor, 
     ConfirmationMessage, ClassCapacity, CapacityMessageSettings, UITexts, FooterInfo, 
     GroupInquiry, AddBookingResult, PaymentDetails, AttendanceStatus,
-    InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo
+    InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo, BankDetails, TimeSlot, ClientNotification
 } from '../types.js';
-// FIX: Corrected import names for default data.
 import { 
     DEFAULT_PRODUCTS, DEFAULT_AVAILABLE_SLOTS_BY_DAY, DEFAULT_INSTRUCTORS, 
     DEFAULT_POLICIES_TEXT, DEFAULT_CONFIRMATION_MESSAGE, DEFAULT_CLASS_CAPACITY, 
@@ -28,6 +28,56 @@ const toCamelCase = (obj: any): any => {
     }
     return obj;
 };
+
+// Helper to parse database rows into correctly typed objects for the application
+const parseBookingFromDB = (dbRow: any): Booking => {
+    if (!dbRow) return dbRow;
+    const camelCased = toCamelCase(dbRow);
+    
+    // Ensure numeric fields are numbers, as vercel/postgres returns them as strings
+    if (camelCased.price && typeof camelCased.price === 'string') {
+        camelCased.price = parseFloat(camelCased.price);
+    }
+    if (camelCased.paymentDetails && camelCased.paymentDetails.amount && typeof camelCased.paymentDetails.amount === 'string') {
+        camelCased.paymentDetails.amount = parseFloat(camelCased.paymentDetails.amount);
+    }
+    if (camelCased.product && camelCased.product.price && typeof camelCased.product.price === 'string') {
+        camelCased.product.price = parseFloat(camelCased.product.price);
+    }
+     if (camelCased.product && camelCased.product.classes && typeof camelCased.product.classes === 'string') {
+        camelCased.product.classes = parseInt(camelCased.product.classes, 10);
+    }
+
+    // Ensure date fields are Date objects
+    if (camelCased.createdAt && typeof camelCased.createdAt === 'string') {
+        camelCased.createdAt = new Date(camelCased.createdAt);
+    }
+
+    return camelCased as Booking;
+}
+
+const parseNotificationFromDB = (dbRow: any): Notification => {
+    if (!dbRow) return dbRow;
+    const camelCased = toCamelCase(dbRow);
+    // Ensure timestamp is a valid ISO string
+    if (camelCased.timestamp && typeof camelCased.timestamp === 'string') {
+        camelCased.timestamp = new Date(camelCased.timestamp).toISOString();
+    }
+    return camelCased as Notification;
+};
+
+const parseClientNotificationFromDB = (dbRow: any): ClientNotification => {
+    if (!dbRow) return dbRow;
+    const camelCased = toCamelCase(dbRow);
+    if (camelCased.createdAt && typeof camelCased.createdAt === 'string') {
+        camelCased.createdAt = new Date(camelCased.createdAt).toISOString();
+    }
+    if (camelCased.scheduledAt && typeof camelCased.scheduledAt === 'string') {
+        camelCased.scheduledAt = new Date(camelCased.scheduledAt).toISOString();
+    }
+    return camelCased as ClientNotification;
+};
+
 
 const generateBookingCode = (): string => {
     const prefix = 'C-ALMA';
@@ -82,7 +132,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
             break;
         case 'bookings':
             const { rows: bookings } = await sql`SELECT * FROM bookings ORDER BY created_at DESC`;
-            data = toCamelCase(bookings);
+            data = bookings.map(parseBookingFromDB);
             break;
         case 'instructors':
             const { rows: instructors } = await sql`SELECT * FROM instructors ORDER BY id ASC`;
@@ -94,7 +144,11 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
             break;
         case 'notifications':
              const { rows: notifications } = await sql`SELECT * FROM notifications ORDER BY timestamp DESC`;
-            data = toCamelCase(notifications);
+            data = notifications.map(parseNotificationFromDB);
+            break;
+        case 'clientNotifications':
+            const { rows: clientNotifications } = await sql`SELECT * FROM client_notifications ORDER BY created_at DESC`;
+            data = clientNotifications.map(parseClientNotificationFromDB);
             break;
         default:
             const { rows: settings } = await sql`SELECT value FROM settings WHERE key = ${key}`;
@@ -173,6 +227,9 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
         case 'updateBooking':
              await sql`UPDATE bookings SET user_info = ${JSON.stringify(body.userInfo)}, price = ${body.price} WHERE id = ${body.id}`;
             break;
+        case 'deleteBooking':
+            await sql`DELETE FROM bookings WHERE id = ${body.bookingId}`;
+            break;
         case 'removeBookingSlot':
             const { bookingId: removeId, slotToRemove } = body;
             const { rows: [bookingToRemoveFrom] } = await sql`SELECT slots FROM bookings WHERE id = ${removeId}`;
@@ -184,7 +241,35 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
         case 'markBookingAsPaid':
             const { bookingId: paidId, details } = body;
             const paymentDetails: PaymentDetails = { ...details, receivedAt: new Date().toISOString() };
-            await sql`UPDATE bookings SET is_paid = true, payment_details = ${JSON.stringify(paymentDetails)} WHERE id = ${paidId}`;
+            const { rows: [updatedBookingRow] } = await sql`
+                UPDATE bookings 
+                SET is_paid = true, payment_details = ${JSON.stringify(paymentDetails)} 
+                WHERE id = ${paidId}
+                RETURNING *;
+            `;
+            
+            try {
+              if (updatedBookingRow) {
+                  const { rows: settingsRows } = await sql`SELECT value FROM settings WHERE key = 'automationSettings'`;
+                  const automationSettings = settingsRows[0]?.value as AutomationSettings;
+                  if (automationSettings?.paymentReceipt?.enabled) {
+                      const fullyParsedBooking = parseBookingFromDB(updatedBookingRow);
+                      await emailService.sendPaymentReceiptEmail(fullyParsedBooking);
+                      await sql`
+                          INSERT INTO client_notifications (created_at, client_name, client_email, type, channel, status, booking_code)
+                          VALUES (
+                              ${new Date().toISOString()}, 
+                              ${`${fullyParsedBooking.userInfo.firstName} ${fullyParsedBooking.userInfo.lastName}`},
+                              ${fullyParsedBooking.userInfo.email},
+                              'PAYMENT_RECEIPT', 'Email', 'Sent',
+                              ${fullyParsedBooking.bookingCode}
+                          );
+                      `;
+                  }
+              }
+            } catch (emailError) {
+              console.warn(`Booking ${updatedBookingRow.booking_code} marked as paid, but receipt email failed to send:`, emailError);
+            }
             break;
         case 'markBookingAsUnpaid':
             await sql`UPDATE bookings SET is_paid = false, payment_details = NULL WHERE id = ${body.bookingId}`;
@@ -235,8 +320,6 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
         case 'reassignAndDeleteInstructor':
             const { instructorIdToDelete, replacementInstructorId } = body;
             await sql`BEGIN`;
-            // This is a simplified version. A real app might need to update bookings, etc.
-            // For now, we update the rules in products.
             const { rows: introClasses } = await sql`SELECT id, scheduling_rules FROM products WHERE type = 'INTRODUCTORY_CLASS'`;
             for (const p of introClasses) {
                 const updatedRules = p.scheduling_rules.map((r: any) => r.instructorId === instructorIdToDelete ? { ...r, instructorId: replacementInstructorId } : r);
@@ -251,7 +334,60 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
         case 'markAllNotificationsAsRead':
             await sql`UPDATE notifications SET read = true`;
             const { rows: notifications } = await sql`SELECT * FROM notifications ORDER BY timestamp DESC`;
-            result = toCamelCase(notifications);
+            result = notifications.map(parseNotificationFromDB);
+            break;
+        case 'triggerScheduledNotifications':
+            const { rows: settingsRows } = await sql`SELECT value FROM settings WHERE key = 'automationSettings'`;
+            const automationSettings = settingsRows[0]?.value as AutomationSettings;
+
+            if (automationSettings?.classReminder?.enabled) {
+                const { value, unit } = automationSettings.classReminder;
+                const now = new Date();
+                const reminderTimeAhead = (unit === 'hours' ? value : value * 24) * 60 * 60 * 1000;
+                
+                const { rows: allBookings } = await sql`SELECT * FROM bookings WHERE is_paid = true`;
+                const { rows: sentReminders } = await sql`SELECT booking_code FROM client_notifications WHERE type = 'CLASS_REMINDER'`;
+                const sentReminderCodes = new Set(sentReminders.map(r => r.booking_code));
+
+                const parseTime = (timeStr: string) => {
+                    const [time, modifier] = timeStr.split(' ');
+                    let [hours, minutes] = time.split(':').map(Number);
+                    if (modifier && modifier.toUpperCase() === 'PM' && hours < 12) hours += 12;
+                    if (modifier && modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
+                    return { hours, minutes };
+                };
+
+                for (const bookingRow of allBookings) {
+                    const booking = parseBookingFromDB(bookingRow);
+                    for (const slot of booking.slots as TimeSlot[]) {
+                        const { hours, minutes } = parseTime(slot.time);
+                        const [year, month, day] = slot.date.split('-').map(Number);
+                        const slotDateTime = new Date(year, month - 1, day, hours, minutes);
+                        const reminderDateTime = new Date(slotDateTime.getTime() - reminderTimeAhead);
+                        
+                        if (now >= reminderDateTime && now < slotDateTime) {
+                            const slotIdentifier = `${booking.bookingCode}_${slot.date}_${slot.time}`;
+                            if (!sentReminderCodes.has(slotIdentifier)) {
+                                try {
+                                  await emailService.sendClassReminderEmail(booking, slot);
+                                  await sql`
+                                      INSERT INTO client_notifications (created_at, client_name, client_email, type, channel, status, booking_code, scheduled_at)
+                                      VALUES (
+                                          ${new Date().toISOString()}, 
+                                          ${`${booking.userInfo.firstName} ${booking.userInfo.lastName}`},
+                                          ${booking.userInfo.email},
+                                          'CLASS_REMINDER', 'Email', 'Sent',
+                                          ${slotIdentifier}, ${new Date().toISOString()}
+                                      );
+                                  `;
+                                } catch (emailError) {
+                                  console.warn(`Reminder email for booking ${slotIdentifier} failed to send:`, emailError);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             break;
         default:
             return res.status(400).json({ error: `Unknown action: ${action}` });
@@ -292,11 +428,38 @@ async function addBookingAction(body: Omit<Booking, 'id' | 'createdAt' | 'bookin
         RETURNING *;
     `;
     
-    // Create notification
+    const fullyParsedBooking = parseBookingFromDB(insertedRow);
+
+    // Create admin notification
     await sql`
       INSERT INTO notifications (type, target_id, user_name, summary)
-      VALUES ('new_booking', ${insertedRow.id}, ${`${userInfo.firstName} ${userInfo.lastName}`}, ${newBooking.product.name});
+      VALUES ('new_booking', ${fullyParsedBooking.id}, ${`${userInfo.firstName} ${userInfo.lastName}`}, ${newBooking.product.name});
     `;
+    
+    // Send pre-booking confirmation email, but don't fail the whole request if it errors out
+    try {
+      const { rows: settingsRows } = await sql`SELECT key, value FROM settings WHERE key = 'automationSettings' OR key = 'bankDetails'`;
+      const automationSettings = settingsRows.find(r => r.key === 'automationSettings')?.value as AutomationSettings;
+      const bankDetails = settingsRows.find(r => r.key === 'bankDetails')?.value as BankDetails;
 
-    return { success: true, message: 'Booking added.', booking: toCamelCase(insertedRow) };
+      if (automationSettings?.preBookingConfirmation?.enabled && bankDetails && bankDetails.accountNumber) {
+          await emailService.sendPreBookingConfirmationEmail(fullyParsedBooking, bankDetails);
+          await sql`
+              INSERT INTO client_notifications (created_at, client_name, client_email, type, channel, status, booking_code)
+              VALUES (
+                  ${new Date().toISOString()}, 
+                  ${`${fullyParsedBooking.userInfo.firstName} ${fullyParsedBooking.userInfo.lastName}`},
+                  ${fullyParsedBooking.userInfo.email},
+                  'PRE_BOOKING_CONFIRMATION', 'Email', 'Sent',
+                  ${fullyParsedBooking.bookingCode}
+              );
+          `;
+      } else if (automationSettings?.preBookingConfirmation?.enabled) {
+        console.log(`Skipping pre-booking confirmation email for ${fullyParsedBooking.bookingCode}: Bank details are not configured.`);
+      }
+    } catch(emailError) {
+      console.warn(`Booking ${fullyParsedBooking.bookingCode} created, but confirmation email failed to send:`, emailError);
+    }
+
+    return { success: true, message: 'Booking added.', booking: fullyParsedBooking };
 }
