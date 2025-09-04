@@ -67,7 +67,8 @@
     "wizard": {
       "stepMonth": "Selecciona Mes",
       "stepDay": "Selecciona Día",
-      "stepTime": "Selecciona Hora"
+      "stepTime": "Selecciona Hora",
+      "backButton": "Atrás"
     }
   },
   "products": {
@@ -259,7 +260,9 @@
       "messageTitle": "Mensaje/Solicitudes",
       "eventType": "Tipo de Evento",
       "type_group": "Grupo",
-      "type_couple": "Pareja"
+      "type_couple": "Pareja",
+      "notApplicable": "N/A",
+      "invalidDate": "Fecha inválida"
     },
     "weeklyView": {
       "unpaid": "({{count}} sin pagar)",

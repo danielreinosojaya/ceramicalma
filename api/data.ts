@@ -6,7 +6,7 @@ import type {
     Product, Booking, ScheduleOverrides, Notification, Announcement, Instructor, 
     ConfirmationMessage, ClassCapacity, CapacityMessageSettings, UITexts, FooterInfo, 
     GroupInquiry, AddBookingResult, PaymentDetails, AttendanceStatus,
-    InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo, BankDetails, TimeSlot
+    InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo, BankDetails, TimeSlot, ClientNotification
 } from '../types.js';
 import { 
     DEFAULT_PRODUCTS, DEFAULT_AVAILABLE_SLOTS_BY_DAY, DEFAULT_INSTRUCTORS, 
@@ -55,6 +55,28 @@ const parseBookingFromDB = (dbRow: any): Booking => {
 
     return camelCased as Booking;
 }
+
+const parseNotificationFromDB = (dbRow: any): Notification => {
+    if (!dbRow) return dbRow;
+    const camelCased = toCamelCase(dbRow);
+    // Ensure timestamp is a valid ISO string
+    if (camelCased.timestamp && typeof camelCased.timestamp === 'string') {
+        camelCased.timestamp = new Date(camelCased.timestamp).toISOString();
+    }
+    return camelCased as Notification;
+};
+
+const parseClientNotificationFromDB = (dbRow: any): ClientNotification => {
+    if (!dbRow) return dbRow;
+    const camelCased = toCamelCase(dbRow);
+    if (camelCased.createdAt && typeof camelCased.createdAt === 'string') {
+        camelCased.createdAt = new Date(camelCased.createdAt).toISOString();
+    }
+    if (camelCased.scheduledAt && typeof camelCased.scheduledAt === 'string') {
+        camelCased.scheduledAt = new Date(camelCased.scheduledAt).toISOString();
+    }
+    return camelCased as ClientNotification;
+};
 
 
 const generateBookingCode = (): string => {
@@ -110,7 +132,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
             break;
         case 'bookings':
             const { rows: bookings } = await sql`SELECT * FROM bookings ORDER BY created_at DESC`;
-            data = toCamelCase(bookings);
+            data = bookings.map(parseBookingFromDB);
             break;
         case 'instructors':
             const { rows: instructors } = await sql`SELECT * FROM instructors ORDER BY id ASC`;
@@ -122,11 +144,11 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
             break;
         case 'notifications':
              const { rows: notifications } = await sql`SELECT * FROM notifications ORDER BY timestamp DESC`;
-            data = toCamelCase(notifications);
+            data = notifications.map(parseNotificationFromDB);
             break;
         case 'clientNotifications':
             const { rows: clientNotifications } = await sql`SELECT * FROM client_notifications ORDER BY created_at DESC`;
-            data = toCamelCase(clientNotifications);
+            data = clientNotifications.map(parseClientNotificationFromDB);
             break;
         default:
             const { rows: settings } = await sql`SELECT value FROM settings WHERE key = ${key}`;
@@ -309,7 +331,7 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
         case 'markAllNotificationsAsRead':
             await sql`UPDATE notifications SET read = true`;
             const { rows: notifications } = await sql`SELECT * FROM notifications ORDER BY timestamp DESC`;
-            result = toCamelCase(notifications);
+            result = notifications.map(parseNotificationFromDB);
             break;
         case 'triggerScheduledNotifications':
             const { rows: settingsRows } = await sql`SELECT value FROM settings WHERE key = 'automationSettings'`;
