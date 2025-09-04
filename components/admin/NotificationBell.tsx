@@ -5,18 +5,21 @@ import { BellIcon } from '../icons/BellIcon';
 import type { Notification } from '../../types';
 
 const TimeAgo: React.FC<{ isoDate: string }> = ({ isoDate }) => {
-    const [timeAgo, setTimeAgo] = useState('');
+    const [timeAgo, setTimeAgo] = useState('---');
 
     useEffect(() => {
         const calculateTimeAgo = () => {
+            if (!isoDate || typeof isoDate !== 'string') {
+                return '---';
+            }
             const date = new Date(isoDate);
             if (isNaN(date.getTime())) {
-                return '...';
+                return '---';
             }
             const now = new Date();
             const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
             
-            if (seconds < 0) return '...';
+            if (seconds < 0) return '---';
 
             let interval = seconds / 31536000;
             if (interval > 1) return `${Math.floor(interval)}y`;

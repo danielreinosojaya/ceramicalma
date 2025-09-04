@@ -69,6 +69,30 @@ interface OpenStudioViewProps {
     onNavigateToCustomer: (email: string) => void;
 }
 
+// Robust timestamp formatting utility
+const formatTimestamp = (dateInput: Date | string | null | undefined): string => {
+    if (!dateInput) {
+        return '---';
+    }
+
+    // Ensure we are working with a Date object
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+
+    // Validate the date object
+    if (isNaN(date.getTime())) {
+        return '---'; // Return a neutral indicator for invalid dates, preventing "Invalid Date"
+    }
+
+    // Use toLocaleString for a more readable timestamp format
+    return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
 export const OpenStudioView: React.FC<OpenStudioViewProps> = ({ bookings, onNavigateToCustomer }) => {
     const { t } = useLanguage();
     const [now, setNow] = useState(new Date());
@@ -91,7 +115,8 @@ export const OpenStudioView: React.FC<OpenStudioViewProps> = ({ bookings, onNavi
             if (booking.isPaid && booking.paymentDetails?.receivedAt) {
                 startDate = new Date(booking.paymentDetails.receivedAt);
                 expiryDate = new Date(startDate);
-                expiryDate.setDate(expiryDate.getDate() + booking.product.details.durationDays);
+                // Precisely add the duration in milliseconds to account for the exact payment time
+                expiryDate.setMilliseconds(expiryDate.getMilliseconds() + booking.product.details.durationDays * 24 * 60 * 60 * 1000);
                 status = now < expiryDate ? 'Active' : 'Expired';
             }
 
@@ -104,12 +129,7 @@ export const OpenStudioView: React.FC<OpenStudioViewProps> = ({ bookings, onNavi
         Expired: 'bg-gray-100 text-gray-800',
         'Pending Payment': 'bg-yellow-100 text-yellow-800',
     };
-
-    const formatDateWithTime = (date: Date | null) => {
-        if (!date) return '---';
-        return date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    };
-
+    
     return (
         <div className="overflow-x-auto animate-fade-in">
             <table className="min-w-full divide-y divide-gray-200">
@@ -135,13 +155,13 @@ export const OpenStudioView: React.FC<OpenStudioViewProps> = ({ bookings, onNavi
                                 </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-text">
-                                {formatDateWithTime(sub.startDate)}
+                                {formatTimestamp(sub.startDate)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                                 {sub.status === 'Active' ? <CountdownTimer expiryDate={sub.expiryDate} /> : <span className="text-sm text-gray-400">---</span>}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-secondary">
-                                {new Date(sub.createdAt).toLocaleDateString()}
+                                {formatTimestamp(sub.createdAt)}
                             </td>
                         </tr>
                     )) : (
