@@ -54,6 +54,10 @@ export const AdminConsole: React.FC = () => {
   const [adminData, setAdminData] = useState<AdminData | null>(null);
 
   const { dataVersion, forceRefresh } = useNotifications();
+  
+  const handleNavigationComplete = useCallback(() => {
+    setNavigateTo(null);
+  }, []);
 
   const fetchData = useCallback(async () => {
       !isLoading && setIsSyncing(true);
@@ -125,9 +129,6 @@ export const AdminConsole: React.FC = () => {
     }
 
     const targetId = navigateTo?.tab === activeTab ? navigateTo.targetId : undefined;
-    if (targetId) {
-        setTimeout(() => setNavigateTo(null), 0);
-    }
 
     const appDataForScheduleManager: AppData = { 
         ...adminData, 
@@ -162,7 +163,12 @@ export const AdminConsole: React.FC = () => {
       case 'financials':
         return <FinancialDashboard bookings={adminData.bookings} onDataChange={handleSync} setNavigateTo={setNavigateTo} />;
       case 'customers':
-        return <CrmDashboard bookings={adminData.bookings} navigateToEmail={targetId} onDataChange={handleSync} />;
+        return <CrmDashboard 
+                  bookings={adminData.bookings} 
+                  navigateToEmail={targetId} 
+                  onDataChange={handleSync} 
+                  onNavigationComplete={handleNavigationComplete} 
+                />;
       case 'inquiries':
         return <InquiryManager inquiries={adminData.inquiries} onDataChange={handleSync} navigateToId={targetId} />;
       case 'communications':

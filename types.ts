@@ -1,6 +1,8 @@
 
 
 
+
+
 export type AppView = 'welcome' | 'packages' | 'intro_classes' | 'schedule' | 'group_experience' | 'couples_experience' | 'summary';
 
 export type DayKey = 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
@@ -186,7 +188,7 @@ export interface Notification {
   targetId: string; // booking.id or inquiry.id
   userName: string;
   summary: string; // product name or inquiry summary
-  timestamp: string; // ISO String
+  timestamp: string | null; // ISO String or null for invalid dates
   read: boolean;
 }
 

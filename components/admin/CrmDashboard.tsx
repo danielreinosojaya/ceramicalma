@@ -11,6 +11,7 @@ interface CrmDashboardProps {
     navigateToEmail?: string;
     bookings: Booking[];
     onDataChange: () => void;
+    onNavigationComplete: () => void;
 }
 
 export type FilterType = 'all' | '1-left' | '2-left' | 'completed';
@@ -72,7 +73,7 @@ const getRemainingClassesInfo = (customer: Customer): RemainingClassesInfo | nul
 };
 
 
-const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, onDataChange }) => {
+const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, onDataChange, onNavigationComplete }) => {
     const { t } = useLanguage();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -97,8 +98,9 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
                 setSelectedCustomer(customer);
                 setSearchTerm('');
             }
+            onNavigationComplete();
         }
-    }, [navigateToEmail, customers]);
+    }, [navigateToEmail, customers, onNavigationComplete]);
 
     useEffect(() => {
       if (selectedCustomer) {
