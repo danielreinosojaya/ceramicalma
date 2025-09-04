@@ -38,16 +38,21 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
 
     const formatDate = (dateInput: Date | string | undefined | null) => {
         if (!dateInput) return '---';
-        const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+        
+        // Uniformly handle Date objects and strings
+        const date = new Date(dateInput);
+
         if (isNaN(date.getTime())) {
-             if(typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}(T.*)?$/.test(dateInput)) {
-                const dateOnly = new Date(dateInput);
-                 if (!isNaN(dateOnly.getTime())) {
-                     return dateOnly.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
-                 }
+            // Fallback for date-only strings if initial parsing fails
+            if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+                const dateOnly = new Date(`${dateInput}T00:00:00`);
+                if (!isNaN(dateOnly.getTime())) {
+                    return dateOnly.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
+                }
             }
-            return '---';
+            return '---'; // Return a neutral placeholder for invalid dates
         }
+
         return date.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
     };
 

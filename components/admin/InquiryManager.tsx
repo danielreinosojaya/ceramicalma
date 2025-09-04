@@ -52,11 +52,18 @@ export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, in
             return t('admin.inquiryManager.notApplicable') || 'N/A';
         }
 
-        const date = dateInput instanceof Date 
-            ? dateInput 
-            : new Date(dateInput.includes('T') ? dateInput : `${dateInput}T00:00:00`);
-            
+        // Create a new Date object regardless of input type to handle both strings and Date objects.
+        const date = new Date(dateInput);
+
+        // Check if the created date is valid.
         if (isNaN(date.getTime())) {
+            // Attempt a fallback for date-only strings like "YYYY-MM-DD"
+            if(typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+                const dateOnly = new Date(`${dateInput}T00:00:00`);
+                 if (!isNaN(dateOnly.getTime())) {
+                     return dateOnly.toLocaleDateString(language, options);
+                 }
+            }
             return t('admin.inquiryManager.invalidDate') || 'Invalid Date';
         }
         return date.toLocaleDateString(language, options);
