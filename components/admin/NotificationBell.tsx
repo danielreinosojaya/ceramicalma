@@ -4,31 +4,42 @@ import { useLanguage } from '../../context/LanguageContext';
 import { BellIcon } from '../icons/BellIcon';
 import type { Notification } from '../../types';
 
-const TimeAgo: React.FC<{ isoDate: string }> = ({ isoDate }) => {
-    const [timeAgo, setTimeAgo] = useState('');
+const TimeAgo: React.FC<{ isoDate: string | null }> = ({ isoDate }) => {
+    const [timeAgo, setTimeAgo] = useState('---');
 
     useEffect(() => {
         const calculateTimeAgo = () => {
+            if (!isoDate || typeof isoDate !== 'string') {
+                return '---';
+            }
             const date = new Date(isoDate);
-            if (isNaN(date.getTime())) {
-                return '...';
+            if (isNaN(date.getTime()) || date.getTime() === 0) {
+                return '---';
             }
             const now = new Date();
             const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-            
-            if (seconds < 0) return '...';
 
-            let interval = seconds / 31536000;
+            // This is the clock skew fix. A small negative number is likely due to client/server clock differences.
+            // If it's a large negative number, it's a genuine future date.
+            if (seconds < -60) { // Allow up to a minute of skew
+                console.warn("TimeAgo received a future date:", isoDate);
+                return '---';
+            }
+            
+            // Treat small negative values or 0 as "just now"
+            const displaySeconds = Math.max(0, seconds);
+
+            let interval = displaySeconds / 31536000;
             if (interval > 1) return `${Math.floor(interval)}y`;
-            interval = seconds / 2592000;
+            interval = displaySeconds / 2592000;
             if (interval > 1) return `${Math.floor(interval)}mo`;
-            interval = seconds / 86400;
+            interval = displaySeconds / 86400;
             if (interval > 1) return `${Math.floor(interval)}d`;
-            interval = seconds / 3600;
+            interval = displaySeconds / 3600;
             if (interval > 1) return `${Math.floor(interval)}h`;
-            interval = seconds / 60;
+            interval = displaySeconds / 60;
             if (interval > 1) return `${Math.floor(interval)}m`;
-            return `${Math.floor(seconds)}s`;
+            return `${Math.floor(displaySeconds)}s`;
         };
         
         setTimeAgo(calculateTimeAgo());

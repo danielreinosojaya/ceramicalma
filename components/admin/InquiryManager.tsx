@@ -19,7 +19,7 @@ interface InquiryManagerProps {
     onDataChange: () => void;
 }
 
-export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, inquiries, onDataChange }) => {
+export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, inquiries = [], onDataChange }) => {
     const { t, language } = useLanguage();
     const [expandedInquiryId, setExpandedInquiryId] = useState<string | null>(null);
     const [highlightedInquiryId, setHighlightedInquiryId] = useState<string | null>(null);
@@ -47,16 +47,23 @@ export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, in
         setExpandedInquiryId(prevId => (prevId === id ? null : id));
     };
 
-    const formatDate = (dateString: string | null | undefined, options: Intl.DateTimeFormatOptions) => {
-        if (!dateString) {
-            // FIX: The `t` function expects an options object as a second argument, not a string. Using `||` for fallback.
+    const formatDate = (dateInput: string | Date | null | undefined, options: Intl.DateTimeFormatOptions) => {
+        if (!dateInput) {
             return t('admin.inquiryManager.notApplicable') || 'N/A';
         }
-        // Date strings from Postgres DATE type are like 'YYYY-MM-DD'. Appending time makes it UTC midnight, avoiding timezone shifts.
-        // TIMESTAMPTZ strings are full ISO strings and are handled correctly by new Date().
-        const date = new Date(dateString.includes('T') ? dateString : `${dateString}T00:00:00`);
+
+        // Create a new Date object regardless of input type to handle both strings and Date objects.
+        const date = new Date(dateInput);
+
+        // Check if the created date is valid.
         if (isNaN(date.getTime())) {
-            // FIX: The `t` function expects an options object as a second argument, not a string. Using `||` for fallback.
+            // Attempt a fallback for date-only strings like "YYYY-MM-DD"
+            if(typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+                const dateOnly = new Date(`${dateInput}T00:00:00`);
+                 if (!isNaN(dateOnly.getTime())) {
+                     return dateOnly.toLocaleDateString(language, options);
+                 }
+            }
             return t('admin.inquiryManager.invalidDate') || 'Invalid Date';
         }
         return date.toLocaleDateString(language, options);
@@ -137,7 +144,12 @@ export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, in
                                             </div>
                                              <div>
                                                 <h5 className="font-bold text-brand-secondary mb-1">{t('admin.inquiryManager.eventType')}</h5>
-                                                <p className="text-brand-text">{t(`groupInquiry.eventTypeOptions.${inquiry.eventType}`) || 'Not specified.'}</p>
+                                                <p className="text-brand-text">
+                                                    {inquiry.eventType 
+                                                        ? t(`groupInquiry.eventTypeOptions.${inquiry.eventType}`) 
+                                                        : t('admin.inquiryManager.notSpecified')
+                                                    }
+                                                </p>
                                             </div>
                                         </div>
                                     </td>

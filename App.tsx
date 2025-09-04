@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { WelcomeSelector } from './components/WelcomeSelector';
@@ -30,7 +31,8 @@ const App: React.FC = () => {
   const { t, language, isTranslationsReady } = useLanguage();
   
   // App State
-  const [currentView, setCurrentView] = useState<AppView>('welcome');
+  const [viewHistory, setViewHistory] = useState<AppView[]>(['welcome']);
+  const currentView = viewHistory[viewHistory.length - 1];
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [dataVersion, setDataVersion] = useState(0); // Used to trigger data refetches
@@ -59,6 +61,14 @@ const App: React.FC = () => {
   const [copiedAccount, setCopiedAccount] = useState(false);
   
   const refetchData = useCallback(() => setDataVersion(v => v + 1), []);
+  
+  const navigateTo = (view: AppView) => {
+    setViewHistory(prev => [...prev, view]);
+  };
+  
+  const navigateBack = () => {
+    setViewHistory(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
+  };
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -102,7 +112,7 @@ const App: React.FC = () => {
   }, [dataVersion]); // Re-fetch all data when dataVersion changes
   
   const resetToStart = useCallback(() => {
-    setCurrentView('welcome');
+    setViewHistory(['welcome']);
     setSelectedProduct(null);
     setSelectedSlots([]);
     setUserInfo(null);
@@ -124,10 +134,10 @@ const App: React.FC = () => {
         setIsBookingTypeModalVisible(true);
     } else if (selectedProduct.type === 'CLASS_PACKAGE') {
         setBookingMode('flexible');
-        setCurrentView('schedule');
+        navigateTo('schedule');
     } else if (selectedProduct.type === 'OPEN_STUDIO_SUBSCRIPTION') {
         setSelectedSlots([]);
-        setCurrentView('summary');
+        navigateTo('summary');
     }
   }, [selectedProduct]);
 
@@ -135,13 +145,13 @@ const App: React.FC = () => {
     const slot: TimeSlot = { date: session.date, time: session.time, instructorId: session.instructorId };
     setSelectedProduct(product);
     setSelectedSlots([slot]);
-    setCurrentView('summary');
+    navigateTo('summary');
   }, []);
 
   const handleBookingTypeSelect = useCallback((mode: BookingMode) => {
     setBookingMode(mode);
     setIsBookingTypeModalVisible(false);
-    setCurrentView('schedule');
+    navigateTo('schedule');
   }, []);
 
   const handleInfoModalClose = useCallback(() => {
@@ -151,7 +161,7 @@ const App: React.FC = () => {
 
   const handleScheduleConfirm = useCallback((slots: TimeSlot[]) => {
     setSelectedSlots(slots);
-    setCurrentView('summary');
+    navigateTo('summary');
   }, []);
 
   const handleInquirySubmit = useCallback(async (inquiryData: Omit<GroupInquiry, 'id' | 'status' | 'createdAt' | 'inquiryType'>, inquiryType: 'group' | 'couple') => {
@@ -387,10 +397,10 @@ const App: React.FC = () => {
     switch (currentView) {
         case 'welcome':
             return <WelcomeSelector onSelect={(type) => {
-              if (type === 'new') setCurrentView('intro_classes');
+              if (type === 'new') navigateTo('intro_classes');
               if (type === 'returning') setIsPrerequisiteModalVisible(true);
-              if (type === 'group_experience') setCurrentView('group_experience');
-              if (type === 'couples_experience') setCurrentView('couples_experience');
+              if (type === 'group_experience') navigateTo('group_experience');
+              if (type === 'couples_experience') navigateTo('couples_experience');
             }} />;
         case 'packages':
             return <PackageSelector onSelect={handleProductSelect} />;
@@ -402,7 +412,7 @@ const App: React.FC = () => {
                 pkg={selectedProduct} 
                 initialSlots={selectedSlots}
                 onConfirm={handleScheduleConfirm} 
-                onBack={() => { setCurrentView('packages'); setSelectedProduct(null); }}
+                onBack={navigateBack}
                 bookingMode={bookingMode}
                 appData={appData}
               />
@@ -412,11 +422,7 @@ const App: React.FC = () => {
                 <BookingSummary 
                     bookingDetails={{ product: selectedProduct, slots: selectedSlots, userInfo }}
                     onProceedToConfirmation={handleProceedToUserInfo}
-                    onBack={() => {
-                      if (selectedProduct.type === 'CLASS_PACKAGE') setCurrentView('schedule');
-                      else if (selectedProduct.type === 'INTRODUCTORY_CLASS') setCurrentView('intro_classes');
-                      else setCurrentView('packages');
-                    }}
+                    onBack={navigateBack}
                     appData={appData}
                 />
             ) : null;
@@ -460,8 +466,8 @@ const App: React.FC = () => {
       {isPrerequisiteModalVisible && (
         <PrerequisiteModal
             onClose={() => setIsPrerequisiteModalVisible(false)}
-            onConfirm={() => { setIsPrerequisiteModalVisible(false); setCurrentView('packages'); }}
-            onGoToIntro={() => { setIsPrerequisiteModalVisible(false); setCurrentView('intro_classes'); }}
+            onConfirm={() => { setIsPrerequisiteModalVisible(false); navigateTo('packages'); }}
+            onGoToIntro={() => { setIsPrerequisiteModalVisible(false); navigateTo('intro_classes'); }}
         />
       )}
       

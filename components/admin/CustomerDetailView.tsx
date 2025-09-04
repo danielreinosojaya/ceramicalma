@@ -1,13 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import type { Customer, Booking, ClassPackage, TimeSlot } from '../../types';
+import type { Customer, Booking, ClassPackage, TimeSlot, OpenStudioSubscription } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import * as dataService from '../../services/dataService';
 import { MailIcon } from '../icons/MailIcon';
 import { PhoneIcon } from '../icons/PhoneIcon';
-import { CalendarIcon } from '../icons/CalendarIcon';
-import { KeyIcon } from '../icons/KeyIcon';
 import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
-import { ChevronDownIcon } from '../icons/ChevronDownIcon';
 import { TrashIcon } from '../icons/TrashIcon';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
@@ -30,14 +27,8 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
     const { t, language } = useLanguage();
     
     const [now, setNow] = useState(new Date());
-    const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
-
-    // State for pagination
-    const [paymentsPage, setPaymentsPage] = useState(1);
     const [bookingsPage, setBookingsPage] = useState(1);
     const recordsPerPage = 5;
-
-    // State for deletion modal
     const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
 
     useEffect(() => {
@@ -45,28 +36,37 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
         return () => clearInterval(timerId);
     }, []);
 
-    const formatDate = (dateInput: Date | string | undefined) => {
+    const formatDate = (dateInput: Date | string | undefined | null) => {
         if (!dateInput) return '---';
+        
+        // Uniformly handle Date objects and strings
         const date = new Date(dateInput);
+
         if (isNaN(date.getTime())) {
-            if(typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-                const dateOnly = new Date(dateInput + 'T00:00:00');
-                 if (!isNaN(dateOnly.getTime())) {
-                     return dateOnly.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
-                 }
+            // Fallback for date-only strings if initial parsing fails
+            if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+                const dateOnly = new Date(`${dateInput}T00:00:00`);
+                if (!isNaN(dateOnly.getTime())) {
+                    return dateOnly.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
+                }
             }
-            return '---';
+            return '---'; // Return a neutral placeholder for invalid dates
         }
+
         return date.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
     const handleTogglePaidStatus = async (booking: Booking) => {
         if (booking.isPaid) {
-            await dataService.markBookingAsUnpaid(booking.id);
+            if (window.confirm("Are you sure you want to mark this booking as UNPAID? This will remove the payment details.")) {
+               await dataService.markBookingAsUnpaid(booking.id);
+               onDataChange();
+            }
         } else {
+            // In a real app, this would open a payment modal. For now, we manually set it.
             await dataService.markBookingAsPaid(booking.id, { method: 'Manual', amount: booking.price });
+            onDataChange();
         }
-        onDataChange();
     };
     
     const handleDeleteRequest = (booking: Booking) => {
@@ -83,15 +83,34 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
 
     const { userInfo, totalSpent, lastBookingDate, bookings } = customer;
 
-    const totalClassesBooked = useMemo(() => bookings.filter(b => b.productType === 'CLASS_PACKAGE' || b.productType === 'INTRODUCTORY_CLASS').reduce((sum, booking) => sum + booking.slots.length, 0), [bookings]);
-    const paidBookings = useMemo(() => bookings.filter(b => b.isPaid), [bookings]);
+    const allBookingsSorted = useMemo(() => 
+        [...bookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        [bookings]
+    );
 
-    // Pagination calculations
-    const totalPaymentPages = Math.ceil(paidBookings.length / recordsPerPage);
-    const paginatedPaidBookings = paidBookings.slice((paymentsPage - 1) * recordsPerPage, paymentsPage * recordsPerPage);
+    const totalBookingPages = Math.ceil(allBookingsSorted.length / recordsPerPage);
+    const paginatedBookings = allBookingsSorted.slice((bookingsPage - 1) * recordsPerPage, bookingsPage * recordsPerPage);
 
-    const totalBookingPages = Math.ceil(bookings.length / recordsPerPage);
-    const paginatedBookings = bookings.slice((bookingsPage - 1) * recordsPerPage, bookingsPage * recordsPerPage);
+    const renderProgressExpiry = (booking: Booking) => {
+        if (booking.productType === 'CLASS_PACKAGE' && booking.product.type === 'CLASS_PACKAGE' && booking.slots && booking.slots.length > 0) {
+            const completed = booking.slots.filter(s => getSlotDateTime(s) < now).length;
+            const total = booking.product.classes;
+            return <span className="text-sm">{t('admin.crm.completedOf', { completed, total })}</span>
+        }
+        if (booking.productType === 'OPEN_STUDIO_SUBSCRIPTION' && booking.product.type === 'OPEN_STUDIO_SUBSCRIPTION' && booking.isPaid && booking.paymentDetails) {
+            const startDate = new Date(booking.paymentDetails.receivedAt);
+            const expiryDate = new Date(startDate);
+            const durationDays = booking.product.details.durationDays;
+            expiryDate.setDate(startDate.getDate() + durationDays);
+            const isActive = now < expiryDate;
+            return (
+                 <span className={`text-sm ${isActive ? 'text-brand-text' : 'text-gray-500'}`}>
+                    {t('admin.crm.expiresOn', { date: formatDate(expiryDate) })}
+                </span>
+            )
+        }
+        return <span className="text-sm text-gray-400">N/A</span>;
+    };
 
     return (
         <div className="animate-fade-in">
@@ -121,54 +140,17 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                 <KPICard title={t('admin.crm.lastBooking')} value={formatDate(lastBookingDate)} />
             </div>
             
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
-                <h3 className="font-bold text-brand-text mb-4">{t('admin.crm.paymentHistory')}</h3>
-                <div className="overflow-x-auto">
-                    {paidBookings.length > 0 ? (
-                        <>
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-brand-background">
-                                    <tr>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.date')}</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.package')}</th>
-                                        <th className="px-4 py-2 text-right text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.amount')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {paginatedPaidBookings.map(b => (
-                                        <tr key={b.id}>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(b.paymentDetails?.receivedAt)}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-right font-semibold text-brand-text">${b.price.toFixed(2)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {totalPaymentPages > 1 && (
-                                <div className="mt-4 flex justify-between items-center text-sm">
-                                    <button onClick={() => setPaymentsPage(p => Math.max(1, p - 1))} disabled={paymentsPage === 1} className="font-semibold disabled:text-gray-400">&larr; {t('admin.crm.previous')}</button>
-                                    <span>{t('admin.crm.page')} {paymentsPage} {t('admin.crm.of')} {totalPaymentPages}</span>
-                                    <button onClick={() => setPaymentsPage(p => Math.min(totalPaymentPages, p + 1))} disabled={paymentsPage === totalPaymentPages} className="font-semibold disabled:text-gray-400">{t('admin.crm.next')} &rarr;</button>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <p className="text-sm text-brand-secondary text-center py-4">{t('admin.crm.noPaymentsFound')}</p>
-                    )}
-                </div>
-            </div>
-            
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="font-bold text-brand-text mb-4">{t('admin.crm.bookingHistory')}</h3>
+                <h3 className="font-bold text-brand-text mb-4">{t('admin.crm.bookingAndPrebookingHistory')}</h3>
                 <div className="overflow-x-auto">
-                     {bookings.length > 0 ? (
+                     {allBookingsSorted.length > 0 ? (
                         <>
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-brand-background">
                                     <tr>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.date')}</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.package')}</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.bookingCode')}</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.progressExpiry')}</th>
                                         <th className="px-4 py-2 text-center text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.status')}</th>
                                         <th className="px-4 py-2 text-right text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.productManager.actionsLabel')}</th>
                                     </tr>
@@ -176,9 +158,12 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {paginatedBookings.map(b => (
                                         <tr key={b.id}>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(b.createdAt)}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap">
+                                                <div className="text-sm font-semibold text-brand-text">{formatDate(b.createdAt)}</div>
+                                                <div className="text-xs font-mono text-brand-secondary">{b.bookingCode || '---'}</div>
+                                            </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm font-mono text-brand-secondary">{b.bookingCode || '---'}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap">{renderProgressExpiry(b)}</td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-center">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${b.isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{b.isPaid ? t('admin.bookingModal.paidStatus') : t('admin.bookingModal.unpaidStatus')}</span>
                                             </td>

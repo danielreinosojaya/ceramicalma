@@ -262,7 +262,8 @@
       "type_group": "Grupo",
       "type_couple": "Pareja",
       "notApplicable": "N/A",
-      "invalidDate": "Fecha inválida"
+      "invalidDate": "Fecha inválida",
+      "notSpecified": "No especificado"
     },
     "weeklyView": {
       "unpaid": "({{count}} sin pagar)",
@@ -520,6 +521,9 @@
       "pendingPreservationsTab": "Pre-reservas Pendientes",
       "capacityHealthTab": "Salud de Capacidad",
       "pendingSubtitle": "Rastrea y gestiona todas las pre-reservas pendientes de pago.",
+      "packagesAndClasses": "Paquetes y Clases",
+      "openStudio": "Open Studio",
+      "openStudioDateFilterInfo": "Mostrando todas las suscripciones de Open Studio pendientes, sin importar la fecha.",
       "pendingTable": {
         "date": "Fecha Pre-reserva",
         "customer": "Cliente",
@@ -573,8 +577,7 @@
       "subscriptions": "Suscripciones",
       "noSubscriptions": "No se encontraron suscripciones para este cliente.",
       "purchasedOn": "Comprado el",
-      "expiresOn": "Expira el",
-      "expiredOn": "Expiró el",
+      "expiresOn": "Vence el {{date}}",
       "statusActive": "Activa",
       "statusExpired": "Expirada",
       "activePackages": "Productos Activos",
@@ -584,6 +587,7 @@
       "noUpcomingClasses": "No hay próximas clases programadas.",
       "progressText": "{{completed}} de {{total}} clases completadas",
       "bookingHistory": "Historial de Reservas",
+      "bookingAndPrebookingHistory": "Historial de Reservas y Pre-reservas",
       "bookingCode": "Código Reserva",
       "paymentHistory": "Historial de Pagos",
       "noPaymentsFound": "No se encontraron pagos.",
@@ -592,8 +596,24 @@
       "status": "Estado",
       "amount": "Monto",
       "progress": "Progreso",
+      "progressExpiry": "Progreso / Vencimiento",
       "classStatusCompleted": "Completada",
       "classStatusUpcoming": "Próxima",
+      "completedOf": "{{completed}} de {{total}} completadas",
+      "allCustomersTab": "Todos los Clientes",
+      "openStudioTab": "Open Studio",
+      "openStudio": {
+          "status": "Estado",
+          "startDate": "Fecha de Inicio",
+          "expiryDate": "Fecha de Vencimiento",
+          "purchaseDate": "Fecha de Compra",
+          "remainingTime": "Tiempo Restante",
+          "statusActive": "Activa",
+          "statusExpired": "Vencida",
+          "statusPendingPayment": "Pendiente de Pago",
+          "noSubscriptions": "No se encontraron suscripciones de Open Studio.",
+          "d": "d"
+      },
       "filters": {
         "title": "Filtros Avanzados",
         "classesRemaining": "Clases Restantes",
@@ -601,7 +621,13 @@
         "2left": "2 Clases Restantes",
         "1left": "1 Clase Restante",
         "completed": "Paquete Completado"
-      }
+      },
+      "deleteBookingTitle": "Eliminar Reserva",
+      "deleteBookingMessage": "¿Estás seguro de que quieres eliminar permanentemente la reserva {{code}}? Esta acción no se puede deshacer.",
+      "page": "Página",
+      "of": "de",
+      "previous": "Anterior",
+      "next": "Siguiente"
     },
     "settingsManager": {
       "title": "Configuración General",

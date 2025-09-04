@@ -59,9 +59,16 @@ const parseBookingFromDB = (dbRow: any): Booking => {
 const parseNotificationFromDB = (dbRow: any): Notification => {
     if (!dbRow) return dbRow;
     const camelCased = toCamelCase(dbRow);
-    // Ensure timestamp is a valid ISO string
-    if (camelCased.timestamp && typeof camelCased.timestamp === 'string') {
-        camelCased.timestamp = new Date(camelCased.timestamp).toISOString();
+    if (camelCased.timestamp) {
+        const date = new Date(camelCased.timestamp);
+        if (isNaN(date.getTime())) {
+            console.warn(`Invalid timestamp from DB for notification: ${camelCased.timestamp}. Setting to null.`);
+            camelCased.timestamp = null; // Set to null if invalid
+        } else {
+            camelCased.timestamp = date.toISOString(); // Standardize to ISO string
+        }
+    } else {
+        camelCased.timestamp = null; // Set to null if missing
     }
     return camelCased as Notification;
 };

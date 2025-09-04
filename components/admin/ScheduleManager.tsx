@@ -39,6 +39,19 @@ const getWeekStartDate = (date: Date) => {
     return new Date(d.setDate(diff));
 };
 
+const normalizeTime = (timeStr: string): string => {
+    if (!timeStr) return '';
+    // This works for both "18:00" and "6:00 PM"
+    const date = new Date(`1970-01-01 ${timeStr}`);
+    if (isNaN(date.getTime())) {
+        console.warn(`Could not normalize time: ${timeStr}`);
+        return timeStr; // Fallback
+    }
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+};
+
 interface ScheduleManagerProps extends AppData {
     initialDate: Date;
     onBackToMonth: () => void;
@@ -115,11 +128,17 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ initialDate, o
                     todaysSlots.push(...sessionsForDay.map(s => ({ ...s, product: introProduct, isOverride: s.isOverride })));
                 }
                 
-                todaysSlots.sort((a,b) => a.time.localeCompare(b.time, undefined, { numeric: true }));
+                todaysSlots.sort((a,b) => normalizeTime(a.time).localeCompare(normalizeTime(b.time)));
 
                 const enrichedSlots = todaysSlots.map(slot => {
+                    const normalizedSlotTime = normalizeTime(slot.time);
                     const bookingsForSlot = bookings.filter(b => 
-                        b.slots.some(s => s.date === dateStr && s.time === slot.time && s.instructorId === instructor.id)
+                        b.productId === slot.product.id &&
+                        b.slots.some(s => 
+                            s.date === dateStr && 
+                            normalizeTime(s.time) === normalizedSlotTime && 
+                            s.instructorId === instructor.id
+                        )
                     );
                     return { ...slot, bookings: bookingsForSlot };
                 });

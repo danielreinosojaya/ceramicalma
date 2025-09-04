@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import type { Notification } from '../types';
 import * as dataService from '../services/dataService';
@@ -15,7 +16,8 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-const safeGetTime = (timestamp: string) => {
+const safeGetTime = (timestamp: string | null) => {
+    if (!timestamp) return 0; // Treat null/undefined as very old
     const date = new Date(timestamp);
     return isNaN(date.getTime()) ? 0 : date.getTime();
 }
