@@ -47,11 +47,15 @@ export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, in
         setExpandedInquiryId(prevId => (prevId === id ? null : id));
     };
 
-    const formatDate = (dateString: string | null | undefined, options: Intl.DateTimeFormatOptions) => {
-        if (!dateString) {
+    const formatDate = (dateInput: string | Date | null | undefined, options: Intl.DateTimeFormatOptions) => {
+        if (!dateInput) {
             return t('admin.inquiryManager.notApplicable') || 'N/A';
         }
-        const date = new Date(dateString.includes('T') ? dateString : `${dateString}T00:00:00`);
+
+        const date = dateInput instanceof Date 
+            ? dateInput 
+            : new Date(dateInput.includes('T') ? dateInput : `${dateInput}T00:00:00`);
+            
         if (isNaN(date.getTime())) {
             return t('admin.inquiryManager.invalidDate') || 'Invalid Date';
         }

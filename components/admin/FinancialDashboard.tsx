@@ -142,12 +142,24 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
         const { startDate, endDate } = getDatesForPeriod(pendingPeriod, pendingCustomRange);
         return allBookings.filter(b => {
             if (b.isPaid) return false;
+
+            // For bookings with scheduled classes (packages, intro classes),
+            // check if any class falls within the selected period.
+            if (b.slots && b.slots.length > 0) {
+                return b.slots.some(slot => {
+                    // The date from the DB is just 'YYYY-MM-DD', so create date object carefully to avoid timezone issues.
+                    const slotDate = new Date(slot.date + 'T00:00:00');
+                    return slotDate >= startDate && slotDate <= endDate;
+                });
+            }
             
-            // A pre-reservation is relevant if any of its scheduled classes fall within the date range.
-            return b.slots.some(slot => {
-                const slotDate = new Date(slot.date + 'T00:00:00'); 
-                return slotDate >= startDate && slotDate <= endDate;
-            });
+            // For bookings without scheduled classes (like Open Studio subscriptions
+            // or packages pending scheduling), check if the pre-booking was created
+            // within the selected period.
+            else {
+                const creationDate = new Date(b.createdAt);
+                return creationDate >= startDate && creationDate <= endDate;
+            }
         }).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }, [pendingPeriod, pendingCustomRange, allBookings]);
 
@@ -159,7 +171,8 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
 
         const packageRevenue = summaryBookings.reduce((acc, b) => {
             if (!b.product) return acc;
-            acc[b.product.name] = (acc[b.product.name] || 0) + b.price;
+            const key = b.product.name;
+            acc[key] = (acc[key] || 0) + b.price;
             return acc;
         }, {} as Record<string, number>);
 
@@ -167,7 +180,8 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
 
         const paymentMethodRevenue = summaryBookings.reduce((acc, b) => {
             const method = b.paymentDetails?.method || 'Manual';
-            acc[method] = (acc[method] || 0) + b.price;
+            const key = method;
+            acc[key] = (acc[key] || 0) + b.price;
             return acc;
         }, {} as Record<string, number>);
 
@@ -189,29 +203,30 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
     const paymentMethodChartRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
+        if (activeTab !== 'summary') return;
+    
+        const charts = [lineChartRef, doughnutChartRef, paymentMethodChartRef];
+        charts.forEach(ref => {
+            if (ref.current) {
+                const chartInstance = Chart.getChart(ref.current);
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+            }
+        });
+
         const lineCtx = lineChartRef.current?.getContext('2d');
         const doughnutCtx = doughnutChartRef.current?.getContext('2d');
         const paymentMethodCtx = paymentMethodChartRef.current?.getContext('2d');
 
-        if (!lineCtx || !doughnutCtx || !paymentMethodCtx || activeTab !== 'summary') return;
-        
-        if (lineChartRef.current && Chart.getChart(lineChartRef.current)) {
-            Chart.getChart(lineChartRef.current)!.destroy();
-        }
-        if (doughnutChartRef.current && Chart.getChart(doughnutChartRef.current)) {
-            Chart.getChart(doughnutChartRef.current)!.destroy();
-        }
-        if (paymentMethodChartRef.current && Chart.getChart(paymentMethodChartRef.current)) {
-            Chart.getChart(paymentMethodChartRef.current)!.destroy();
-        }
-
+        if (!lineCtx || !doughnutCtx || !paymentMethodCtx) return;
 
         // Line Chart Data
-        const revenueByDate = summaryBookings.reduce((acc, b) => {
+        const revenueByDate = summaryBookings.reduce((acc: Record<string, number>, b: Booking) => {
             const date = (b.paymentDetails ? new Date(b.paymentDetails.receivedAt) : new Date(b.createdAt)).toISOString().split('T')[0];
             acc[date] = (acc[date] || 0) + b.price;
             return acc;
-        }, {} as Record<string, number>);
+        }, {});
         
         const sortedDates = Object.keys(revenueByDate).sort();
         
@@ -223,11 +238,12 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
         });
 
         // Doughnut Chart Data - Revenue by Package
-        const revenueByPackage = summaryBookings.reduce((acc, b) => {
+        const revenueByPackage = summaryBookings.reduce((acc: Record<string, number>, b: Booking) => {
             if (!b.product) return acc;
-            acc[b.product.name] = (acc[b.product.name] || 0) + b.price;
+            const key = b.product.name;
+            acc[key] = (acc[key] || 0) + b.price;
             return acc;
-        }, {} as Record<string, number>);
+        }, {});
         
         new Chart(doughnutCtx, {
             type: 'doughnut', data: {
@@ -237,11 +253,12 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
         });
 
         // Doughnut Chart Data - Revenue by Payment Method
-        const paymentMethodData = summaryBookings.reduce((acc, b) => {
+        const paymentMethodData = summaryBookings.reduce((acc: Record<string, number>, b: Booking) => {
             const method = b.paymentDetails?.method || 'Manual';
-            acc[method] = (acc[method] || 0) + b.price;
+            const key = method;
+            acc[key] = (acc[key] || 0) + b.price;
             return acc;
-        }, {} as Record<string, number>);
+        }, {});
 
         new Chart(paymentMethodCtx, {
             type: 'doughnut', data: {

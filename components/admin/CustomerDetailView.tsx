@@ -36,9 +36,9 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
         return () => clearInterval(timerId);
     }, []);
 
-    const formatDate = (dateInput: Date | string | undefined) => {
+    const formatDate = (dateInput: Date | string | undefined | null) => {
         if (!dateInput) return '---';
-        const date = new Date(dateInput);
+        const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
         if (isNaN(date.getTime())) {
              if(typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}(T.*)?$/.test(dateInput)) {
                 const dateOnly = new Date(dateInput);
