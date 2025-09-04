@@ -523,6 +523,7 @@
       "pendingSubtitle": "Rastrea y gestiona todas las pre-reservas pendientes de pago.",
       "packagesAndClasses": "Paquetes y Clases",
       "openStudio": "Open Studio",
+      "openStudioDateFilterInfo": "Mostrando todas las suscripciones de Open Studio pendientes, sin importar la fecha.",
       "pendingTable": {
         "date": "Fecha Pre-reserva",
         "customer": "Cliente",

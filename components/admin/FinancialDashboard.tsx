@@ -152,11 +152,10 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
             });
         }).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
+        // For Open Studio, we show ALL unpaid subscriptions, regardless of the date range.
+        // The date filter is not relevant for this type of pending payment.
         const openStudio = allBookings.filter(b => {
-            if (b.isPaid || b.productType !== 'OPEN_STUDIO_SUBSCRIPTION') return false;
-            // Filter by creation date
-            const creationDate = new Date(b.createdAt);
-            return creationDate >= startDate && creationDate <= endDate;
+            return !b.isPaid && b.productType === 'OPEN_STUDIO_SUBSCRIPTION';
         }).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         
         return { pendingPackageBookings: packages, pendingOpenStudioBookings: openStudio };
@@ -415,7 +414,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
                         </nav>
                     </div>
 
-                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-2 flex-wrap">
+                    <div className={`bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-2 flex-wrap transition-opacity ${pendingSubTab === 'openStudio' ? 'opacity-50 pointer-events-none' : ''}`}>
                         <button onClick={() => setPendingPeriod('today')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${pendingPeriod === 'today' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.today')}</button>
                         <button onClick={() => setPendingPeriod('week')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${pendingPeriod === 'week' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.thisWeek')}</button>
                         <button onClick={() => setPendingPeriod('month')} className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${pendingPeriod === 'month' ? 'bg-brand-primary text-white' : 'bg-white hover:bg-brand-background'}`}>{t('admin.financialDashboard.thisMonth')}</button>
@@ -425,6 +424,12 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
                             <input type="date" value={pendingCustomRange.end} onChange={e => {setPendingCustomRange(c => ({...c, end: e.target.value})); setPendingPeriod('custom');}} className="text-sm p-1 border rounded-md"/>
                         </div>
                     </div>
+                    
+                    {pendingSubTab === 'openStudio' && (
+                        <div className="text-center text-sm text-brand-secondary -mt-4 mb-6">
+                            {t('admin.financialDashboard.openStudioDateFilterInfo')}
+                        </div>
+                    )}
 
                     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                          <div className="overflow-x-auto">

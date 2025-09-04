@@ -508,6 +508,9 @@
       "pendingPreservationsTab": "Pending Pre-reservations",
       "capacityHealthTab": "Capacity Health",
       "pendingSubtitle": "Track and manage all unpaid pre-reservations.",
+      "packagesAndClasses": "Packages & Classes",
+      "openStudio": "Open Studio",
+      "openStudioDateFilterInfo": "Showing all pending Open Studio subscriptions, regardless of date.",
       "pendingTable": {
         "date": "Pre-booking Date",
         "customer": "Customer",
