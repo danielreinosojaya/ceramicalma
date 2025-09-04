@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import type { Customer, Booking, ClassPackage, TimeSlot } from '../../types';
+import type { Customer, Booking, ClassPackage, TimeSlot, OpenStudioSubscription } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import * as dataService from '../../services/dataService';
 import { MailIcon } from '../icons/MailIcon';
@@ -83,15 +83,26 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
 
     const { userInfo, totalSpent, lastBookingDate, bookings } = customer;
 
-    const totalClassesBooked = useMemo(() => bookings.filter(b => b.productType === 'CLASS_PACKAGE' || b.productType === 'INTRODUCTORY_CLASS').reduce((sum, booking) => sum + booking.slots.length, 0), [bookings]);
+    const paidSubscriptions = useMemo(() => 
+        bookings
+            .filter(b => b.isPaid && b.productType === 'OPEN_STUDIO_SUBSCRIPTION')
+            .sort((a,b) => new Date(b.paymentDetails!.receivedAt).getTime() - new Date(a.paymentDetails!.receivedAt).getTime()),
+        [bookings]
+    );
+
+    const nonSubscriptionBookings = useMemo(() => 
+        bookings.filter(b => b.productType !== 'OPEN_STUDIO_SUBSCRIPTION'),
+        [bookings]
+    );
+
     const paidBookings = useMemo(() => bookings.filter(b => b.isPaid), [bookings]);
 
     // Pagination calculations
     const totalPaymentPages = Math.ceil(paidBookings.length / recordsPerPage);
     const paginatedPaidBookings = paidBookings.slice((paymentsPage - 1) * recordsPerPage, paymentsPage * recordsPerPage);
 
-    const totalBookingPages = Math.ceil(bookings.length / recordsPerPage);
-    const paginatedBookings = bookings.slice((bookingsPage - 1) * recordsPerPage, bookingsPage * recordsPerPage);
+    const totalBookingPages = Math.ceil(nonSubscriptionBookings.length / recordsPerPage);
+    const paginatedBookings = nonSubscriptionBookings.slice((bookingsPage - 1) * recordsPerPage, bookingsPage * recordsPerPage);
 
     return (
         <div className="animate-fade-in">
@@ -119,6 +130,48 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                 <KPICard title={t('admin.crm.lifetimeValue')} value={`$${totalSpent.toFixed(2)}`} />
                 <KPICard title={t('admin.crm.totalBookings')} value={customer.totalBookings} />
                 <KPICard title={t('admin.crm.lastBooking')} value={formatDate(lastBookingDate)} />
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
+                <h3 className="font-bold text-brand-text mb-4">{t('admin.crm.subscriptions')}</h3>
+                {paidSubscriptions.length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-brand-background">
+                                <tr>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.package')}</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.purchasedOn')}</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.expiresOn')}</th>
+                                    <th className="px-4 py-2 text-center text-xs font-medium text-brand-secondary uppercase">{t('admin.crm.status')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {paidSubscriptions.map(sub => {
+                                    const startDate = new Date(sub.paymentDetails!.receivedAt);
+                                    const expiryDate = new Date(startDate);
+                                    const durationDays = (sub.product as OpenStudioSubscription).details.durationDays;
+                                    expiryDate.setDate(startDate.getDate() + durationDays);
+                                    const isActive = now < expiryDate;
+
+                                    return (
+                                        <tr key={sub.id}>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{sub.product.name}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(startDate)}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(expiryDate)}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-center">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                                    {isActive ? t('admin.crm.statusActive') : t('admin.crm.statusExpired')}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <p className="text-sm text-brand-secondary text-center py-4">{t('admin.crm.noSubscriptions')}</p>
+                )}
             </div>
             
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
@@ -161,7 +214,7 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 <h3 className="font-bold text-brand-text mb-4">{t('admin.crm.bookingHistory')}</h3>
                 <div className="overflow-x-auto">
-                     {bookings.length > 0 ? (
+                     {nonSubscriptionBookings.length > 0 ? (
                         <>
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-brand-background">

@@ -49,14 +49,10 @@ export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, in
 
     const formatDate = (dateString: string | null | undefined, options: Intl.DateTimeFormatOptions) => {
         if (!dateString) {
-            // FIX: The `t` function expects an options object as a second argument, not a string. Using `||` for fallback.
             return t('admin.inquiryManager.notApplicable') || 'N/A';
         }
-        // Date strings from Postgres DATE type are like 'YYYY-MM-DD'. Appending time makes it UTC midnight, avoiding timezone shifts.
-        // TIMESTAMPTZ strings are full ISO strings and are handled correctly by new Date().
         const date = new Date(dateString.includes('T') ? dateString : `${dateString}T00:00:00`);
         if (isNaN(date.getTime())) {
-            // FIX: The `t` function expects an options object as a second argument, not a string. Using `||` for fallback.
             return t('admin.inquiryManager.invalidDate') || 'Invalid Date';
         }
         return date.toLocaleDateString(language, options);
@@ -137,7 +133,12 @@ export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, in
                                             </div>
                                              <div>
                                                 <h5 className="font-bold text-brand-secondary mb-1">{t('admin.inquiryManager.eventType')}</h5>
-                                                <p className="text-brand-text">{t(`groupInquiry.eventTypeOptions.${inquiry.eventType}`) || 'Not specified.'}</p>
+                                                <p className="text-brand-text">
+                                                    {inquiry.eventType 
+                                                        ? t(`groupInquiry.eventTypeOptions.${inquiry.eventType}`) 
+                                                        : t('admin.inquiryManager.notSpecified')
+                                                    }
+                                                </p>
                                             </div>
                                         </div>
                                     </td>

@@ -144,11 +144,17 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
             if (b.isPaid) {
                 return false;
             }
-            // Check if any slot date falls within the selected period
-            return b.slots.some(slot => {
-                const slotDate = new Date(slot.date + 'T00:00:00'); // Treat date as local midnight
-                return slotDate >= startDate && slotDate <= endDate;
-            });
+            // For bookings with slots (classes), check if any slot falls in the range.
+            if (b.slots && b.slots.length > 0) {
+                return b.slots.some(slot => {
+                    const slotDate = new Date(slot.date + 'T00:00:00');
+                    return slotDate >= startDate && slotDate <= endDate;
+                });
+            }
+            // For bookings without slots (subscriptions), check the creation date.
+            const creationDate = new Date(b.createdAt);
+            return creationDate >= startDate && creationDate <= endDate;
+            
         }).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }, [pendingPeriod, pendingCustomRange, allBookings]);
 

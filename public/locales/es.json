@@ -262,7 +262,8 @@
       "type_group": "Grupo",
       "type_couple": "Pareja",
       "notApplicable": "N/A",
-      "invalidDate": "Fecha inválida"
+      "invalidDate": "Fecha inválida",
+      "notSpecified": "No especificado"
     },
     "weeklyView": {
       "unpaid": "({{count}} sin pagar)",
@@ -574,7 +575,6 @@
       "noSubscriptions": "No se encontraron suscripciones para este cliente.",
       "purchasedOn": "Comprado el",
       "expiresOn": "Expira el",
-      "expiredOn": "Expiró el",
       "statusActive": "Activa",
       "statusExpired": "Expirada",
       "activePackages": "Productos Activos",
@@ -601,7 +601,13 @@
         "2left": "2 Clases Restantes",
         "1left": "1 Clase Restante",
         "completed": "Paquete Completado"
-      }
+      },
+      "deleteBookingTitle": "Eliminar Reserva",
+      "deleteBookingMessage": "¿Estás seguro de que quieres eliminar permanentemente la reserva {{code}}? Esta acción no se puede deshacer.",
+      "page": "Página",
+      "of": "de",
+      "previous": "Anterior",
+      "next": "Siguiente"
     },
     "settingsManager": {
       "title": "Configuración General",
