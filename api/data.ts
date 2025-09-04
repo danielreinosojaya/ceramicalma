@@ -195,23 +195,27 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
                 RETURNING *;
             `;
             
-            if (updatedBooking) {
-                const { rows: settingsRows } = await sql`SELECT value FROM settings WHERE key = 'automationSettings'`;
-                const automationSettings = settingsRows[0]?.value as AutomationSettings;
-                if (automationSettings?.paymentReceipt?.enabled) {
-                    const bookingWithCamelCase = toCamelCase(updatedBooking);
-                    await emailService.sendPaymentReceiptEmail(bookingWithCamelCase);
-                    await sql`
-                        INSERT INTO client_notifications (created_at, client_name, client_email, type, channel, status, booking_code)
-                        VALUES (
-                            ${new Date().toISOString()}, 
-                            ${`${bookingWithCamelCase.userInfo.firstName} ${bookingWithCamelCase.userInfo.lastName}`},
-                            ${bookingWithCamelCase.userInfo.email},
-                            'PAYMENT_RECEIPT', 'Email', 'Sent',
-                            ${bookingWithCamelCase.bookingCode}
-                        );
-                    `;
-                }
+            try {
+              if (updatedBooking) {
+                  const { rows: settingsRows } = await sql`SELECT value FROM settings WHERE key = 'automationSettings'`;
+                  const automationSettings = settingsRows[0]?.value as AutomationSettings;
+                  if (automationSettings?.paymentReceipt?.enabled) {
+                      const bookingWithCamelCase = toCamelCase(updatedBooking);
+                      await emailService.sendPaymentReceiptEmail(bookingWithCamelCase);
+                      await sql`
+                          INSERT INTO client_notifications (created_at, client_name, client_email, type, channel, status, booking_code)
+                          VALUES (
+                              ${new Date().toISOString()}, 
+                              ${`${bookingWithCamelCase.userInfo.firstName} ${bookingWithCamelCase.userInfo.lastName}`},
+                              ${bookingWithCamelCase.userInfo.email},
+                              'PAYMENT_RECEIPT', 'Email', 'Sent',
+                              ${bookingWithCamelCase.bookingCode}
+                          );
+                      `;
+                  }
+              }
+            } catch (emailError) {
+              console.warn(`Booking ${updatedBooking.booking_code} marked as paid, but receipt email failed to send:`, emailError);
             }
             break;
         case 'markBookingAsUnpaid':
@@ -310,17 +314,21 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
                         if (now >= reminderDateTime && now < slotDateTime) {
                             const slotIdentifier = `${booking.booking_code}_${slot.date}_${slot.time}`;
                             if (!sentReminderCodes.has(slotIdentifier)) {
-                                await emailService.sendClassReminderEmail(toCamelCase(booking), slot);
-                                await sql`
-                                    INSERT INTO client_notifications (created_at, client_name, client_email, type, channel, status, booking_code, scheduled_at)
-                                    VALUES (
-                                        ${new Date().toISOString()}, 
-                                        ${`${booking.user_info.firstName} ${booking.user_info.lastName}`},
-                                        ${booking.user_info.email},
-                                        'CLASS_REMINDER', 'Email', 'Sent',
-                                        ${slotIdentifier}, ${new Date().toISOString()}
-                                    );
-                                `;
+                                try {
+                                  await emailService.sendClassReminderEmail(toCamelCase(booking), slot);
+                                  await sql`
+                                      INSERT INTO client_notifications (created_at, client_name, client_email, type, channel, status, booking_code, scheduled_at)
+                                      VALUES (
+                                          ${new Date().toISOString()}, 
+                                          ${`${booking.user_info.firstName} ${booking.user_info.lastName}`},
+                                          ${booking.user_info.email},
+                                          'CLASS_REMINDER', 'Email', 'Sent',
+                                          ${slotIdentifier}, ${new Date().toISOString()}
+                                      );
+                                  `;
+                                } catch (emailError) {
+                                  console.warn(`Reminder email for booking ${slotIdentifier} failed to send:`, emailError);
+                                }
                             }
                         }
                     }
@@ -372,26 +380,29 @@ async function addBookingAction(body: Omit<Booking, 'id' | 'createdAt' | 'bookin
       VALUES ('new_booking', ${insertedRow.id}, ${`${userInfo.firstName} ${userInfo.lastName}`}, ${newBooking.product.name});
     `;
     
-    // Send pre-booking confirmation email
-    const { rows: settingsRows } = await sql`SELECT key, value FROM settings WHERE key = 'automationSettings' OR key = 'bankDetails'`;
-    const automationSettings = settingsRows.find(r => r.key === 'automationSettings')?.value as AutomationSettings;
-    const bankDetails = settingsRows.find(r => r.key === 'bankDetails')?.value as BankDetails;
+    // Send pre-booking confirmation email, but don't fail the whole request if it errors out
+    try {
+      const { rows: settingsRows } = await sql`SELECT key, value FROM settings WHERE key = 'automationSettings' OR key = 'bankDetails'`;
+      const automationSettings = settingsRows.find(r => r.key === 'automationSettings')?.value as AutomationSettings;
+      const bankDetails = settingsRows.find(r => r.key === 'bankDetails')?.value as BankDetails;
 
-    if (automationSettings?.preBookingConfirmation?.enabled && bankDetails) {
-        const bookingWithCamelCase = toCamelCase(insertedRow);
-        await emailService.sendPreBookingConfirmationEmail(bookingWithCamelCase, bankDetails);
-        await sql`
-            INSERT INTO client_notifications (created_at, client_name, client_email, type, channel, status, booking_code)
-            VALUES (
-                ${new Date().toISOString()}, 
-                ${`${bookingWithCamelCase.userInfo.firstName} ${bookingWithCamelCase.userInfo.lastName}`},
-                ${bookingWithCamelCase.userInfo.email},
-                'PRE_BOOKING_CONFIRMATION', 'Email', 'Sent',
-                ${bookingWithCamelCase.bookingCode}
-            );
-        `;
+      if (automationSettings?.preBookingConfirmation?.enabled && bankDetails) {
+          const bookingWithCamelCase = toCamelCase(insertedRow);
+          await emailService.sendPreBookingConfirmationEmail(bookingWithCamelCase, bankDetails);
+          await sql`
+              INSERT INTO client_notifications (created_at, client_name, client_email, type, channel, status, booking_code)
+              VALUES (
+                  ${new Date().toISOString()}, 
+                  ${`${bookingWithCamelCase.userInfo.firstName} ${bookingWithCamelCase.userInfo.lastName}`},
+                  ${bookingWithCamelCase.userInfo.email},
+                  'PRE_BOOKING_CONFIRMATION', 'Email', 'Sent',
+                  ${bookingWithCamelCase.bookingCode}
+              );
+          `;
+      }
+    } catch(emailError) {
+      console.warn(`Booking ${insertedRow.booking_code} created, but confirmation email failed to send:`, emailError);
     }
-
 
     return { success: true, message: 'Booking added.', booking: toCamelCase(insertedRow) };
 }

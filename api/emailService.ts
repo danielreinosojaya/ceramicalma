@@ -4,7 +4,7 @@ import type { Booking, BankDetails, TimeSlot } from '../types.js';
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const fromEmail = process.env.EMAIL_FROM;
 
-const isemailServiceConfigured = () => {
+const isEmailServiceConfigured = () => {
     if (!resend || !fromEmail) {
         console.warn("Email service is not configured. Please set RESEND_API_KEY and EMAIL_FROM environment variables.");
         return false;
@@ -13,7 +13,10 @@ const isemailServiceConfigured = () => {
 }
 
 const sendEmail = async (to: string, subject: string, html: string) => {
-    if (!isemailServiceConfigured()) return;
+    if (!isEmailServiceConfigured()) {
+        console.error("Email service is not configured on the server. RESEND_API_KEY and/or EMAIL_FROM environment variables are missing or incorrect.");
+        throw new Error("Email service is not configured on the server.");
+    }
     try {
         await resend!.emails.send({
             from: fromEmail!,
@@ -23,7 +26,8 @@ const sendEmail = async (to: string, subject: string, html: string) => {
         });
         console.log(`Email sent to ${to} with subject "${subject}"`);
     } catch (error) {
-        console.error(`Failed to send email to ${to}:`, error);
+        console.error(`Resend API Error: Failed to send email to ${to}:`, error);
+        throw error; // Re-throw the error to let the caller know something went wrong
     }
 };
 
