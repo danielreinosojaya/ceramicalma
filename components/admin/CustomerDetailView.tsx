@@ -48,7 +48,14 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
         if (!dateInput) return '---';
         const date = new Date(dateInput);
         if (isNaN(date.getTime())) {
-            return '---';
+            // Attempt to parse just the date part if it's a simple YYYY-MM-DD string
+            if(typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+                const dateOnly = new Date(dateInput + 'T00:00:00');
+                 if (!isNaN(dateOnly.getTime())) {
+                     return dateOnly.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
+                 }
+            }
+            return '---'; // Return fallback if still invalid
         }
         return date.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
     };
@@ -151,7 +158,6 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <KPICard title={t('admin.crm.lifetimeValue')} value={`$${totalSpent.toFixed(2)}`} />
                 <KPICard title={t('admin.crm.totalClassesBooked')} value={totalClassesBooked} />
-                {/* FIX: Cannot find name 'y'. Used lastBookingDate directly. */}
                 <KPICard title={t('admin.crm.lastBooking')} value={formatDate(lastBookingDate)} />
                 <KPICard title={t('admin.crm.noShowRate')} value={noShowRate} />
             </div>
@@ -313,7 +319,7 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {paidBookings.map(b => (
                                     <tr key={b.id}>
-                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(b.createdAt)}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatDate(b.paymentDetails?.receivedAt)}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-sm text-right font-semibold text-brand-text">${b.price.toFixed(2)}</td>
                                     </tr>
