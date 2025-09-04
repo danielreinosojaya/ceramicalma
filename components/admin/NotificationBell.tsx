@@ -13,7 +13,8 @@ const TimeAgo: React.FC<{ isoDate: string }> = ({ isoDate }) => {
                 return '---';
             }
             const date = new Date(isoDate);
-            if (isNaN(date.getTime())) {
+            // Check for invalid date OR Unix epoch date as a fallback
+            if (isNaN(date.getTime()) || date.getTime() === 0) {
                 return '---';
             }
             const now = new Date();

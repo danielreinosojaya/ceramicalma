@@ -59,18 +59,23 @@ const parseBookingFromDB = (dbRow: any): Booking => {
 const parseNotificationFromDB = (dbRow: any): Notification => {
     if (!dbRow) return dbRow;
     const camelCased = toCamelCase(dbRow);
-    
+
     // This is a critical fix: ALWAYS process the timestamp, regardless of its initial type.
     // This ensures a standardized ISO 8601 string is sent to the client, which all browsers can parse.
     if (camelCased.timestamp) {
         const date = new Date(camelCased.timestamp);
+        // Check if the date is valid. If not, it means the source was likely null or malformed.
         if (!isNaN(date.getTime())) {
             camelCased.timestamp = date.toISOString();
         } else {
-            console.warn(`Invalid timestamp from DB for notification: ${camelCased.timestamp}`);
-            // Provide a valid fallback to prevent client-side crashes
-            camelCased.timestamp = new Date(0).toISOString();
+            console.warn(`Invalid or null timestamp from DB for notification: ${camelCased.timestamp}. Defaulting to current time.`);
+            // Default to the current time to avoid the "Unix epoch" issue.
+            camelCased.timestamp = new Date().toISOString(); 
         }
+    } else {
+        // Handle cases where the timestamp field itself is missing or null
+        console.warn(`Missing timestamp from DB for notification. Defaulting to current time.`);
+        camelCased.timestamp = new Date().toISOString();
     }
     return camelCased as Notification;
 };
