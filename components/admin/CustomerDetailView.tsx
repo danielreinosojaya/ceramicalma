@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import type { Customer, Booking, ClassPackage, TimeSlot, OpenStudioSubscription } from '../../types';
+import type { Customer, Booking, ClassPackage, TimeSlot, OpenStudioSubscription, Instructor } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import * as dataService from '../../services/dataService';
 import { MailIcon } from '../icons/MailIcon';
@@ -7,6 +7,7 @@ import { PhoneIcon } from '../icons/PhoneIcon';
 import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
 import { TrashIcon } from '../icons/TrashIcon';
 import { EditIcon } from '../icons/EditIcon';
+import { ActivePackageCard } from './ActivePackageCard';
 
 const KPICard: React.FC<{ title: string; value: string | number; }> = ({ title, value }) => (
     <div className="bg-brand-background p-4 rounded-lg">
@@ -15,21 +16,22 @@ const KPICard: React.FC<{ title: string; value: string | number; }> = ({ title, 
     </div>
 );
 
-const getSlotDateTime = (slot: TimeSlot) => {
-    const time24h = new Date(`1970-01-01 ${slot.time}`).toTimeString().slice(0, 5);
-    const [hours, minutes] = time24h.split(':').map(Number);
-    const [year, month, day] = slot.date.split('-').map(Number);
-    return new Date(year, month - 1, day, hours, minutes);
+const getSlotDateTime = (slot: TimeSlot): Date => {
+  const time24h = new Date(`1970-01-01 ${slot.time}`).toTimeString().slice(0, 5);
+  const [hours, minutes] = time24h.split(':').map(Number);
+  const [year, month, day] = slot.date.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, hours, minutes));
 };
 
 
 export const CustomerDetailView: React.FC<{ 
     customer: Customer; 
+    instructors: Instructor[];
     onBack: () => void; 
     onDataChange: () => void; 
     onEditBooking: (booking: Booking) => void;
     onDeleteBooking: (booking: Booking) => void;
-}> = ({ customer, onBack, onDataChange, onEditBooking, onDeleteBooking }) => {
+}> = ({ customer, instructors, onBack, onDataChange, onEditBooking, onDeleteBooking }) => {
     const { t, language } = useLanguage();
     
     const [now, setNow] = useState(new Date());
@@ -41,21 +43,37 @@ export const CustomerDetailView: React.FC<{
         return () => clearInterval(timerId);
     }, []);
 
+     const activeClassPackages = useMemo(() => {
+        return customer.bookings.filter((b): b is Booking & { product: ClassPackage } => {
+            if (b.productType !== 'CLASS_PACKAGE' || !b.isPaid || b.slots.length === 0) {
+                return false;
+            }
+
+            const sortedSlots = [...b.slots].sort((a, b) => getSlotDateTime(a).getTime() - getSlotDateTime(b).getTime());
+            const firstClassDate = getSlotDateTime(sortedSlots[0]);
+            
+            const expiryDate = new Date(firstClassDate);
+            expiryDate.setUTCDate(expiryDate.getUTCDate() + 30);
+            
+            const allSlotsInPast = sortedSlots.every(s => getSlotDateTime(s) < now);
+
+            return now < expiryDate && !allSlotsInPast;
+        });
+    }, [customer.bookings, now]);
+
     const formatDate = (dateInput: Date | string | undefined | null) => {
         if (!dateInput) return '---';
         
-        // Uniformly handle Date objects and strings
         const date = new Date(dateInput);
 
         if (isNaN(date.getTime())) {
-            // Fallback for date-only strings if initial parsing fails
             if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
                 const dateOnly = new Date(`${dateInput}T00:00:00`);
                 if (!isNaN(dateOnly.getTime())) {
                     return dateOnly.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
                 }
             }
-            return '---'; // Return a neutral placeholder for invalid dates
+            return '---';
         }
 
         return date.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -68,7 +86,6 @@ export const CustomerDetailView: React.FC<{
                onDataChange();
             }
         } else {
-            // In a real app, this would open a payment modal. For now, we manually set it.
             await dataService.markBookingAsPaid(booking.id, { method: 'Manual', amount: booking.price });
             onDataChange();
         }
@@ -86,7 +103,7 @@ export const CustomerDetailView: React.FC<{
 
     const renderProgressExpiry = (booking: Booking) => {
         if (booking.productType === 'CLASS_PACKAGE' && booking.product.type === 'CLASS_PACKAGE' && booking.slots && booking.slots.length > 0) {
-            const completed = booking.slots.filter(s => getSlotDateTime(s) < now).length;
+            const completed = booking.slots.filter(s => getSlotDateTime(s) < new Date()).length;
             const total = booking.product.classes;
             return <span className="text-sm">{t('admin.crm.completedOf', { completed, total })}</span>
         }
@@ -116,6 +133,21 @@ export const CustomerDetailView: React.FC<{
                     <a href={`mailto:${userInfo.email}`} className="flex items-center gap-2 hover:text-brand-accent"><MailIcon className="w-4 h-4" /> {userInfo.email}</a>
                     <div className="flex items-center gap-2"><PhoneIcon className="w-4 h-4" /> {userInfo.countryCode} {userInfo.phone}</div>
                 </div>
+            </div>
+
+            <div className="mb-6">
+                <h3 className="text-xl font-bold text-brand-text mb-4">{t('admin.crm.activePackages')}</h3>
+                {activeClassPackages.length > 0 ? (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        {activeClassPackages.map(booking => (
+                            <ActivePackageCard key={booking.id} booking={booking} instructors={instructors} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="bg-brand-background p-6 rounded-lg text-center text-brand-secondary">
+                        <p>{t('admin.crm.noActivePackages')}</p>
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">

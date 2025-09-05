@@ -165,6 +165,7 @@ export const AdminConsole: React.FC = () => {
       case 'customers':
         return <CrmDashboard 
                   bookings={adminData.bookings} 
+                  instructors={adminData.instructors}
                   navigateToEmail={targetId} 
                   onDataChange={handleSync} 
                   onNavigationComplete={handleNavigationComplete} 

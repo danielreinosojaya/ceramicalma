@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import type { Customer, Booking, ClassPackage, TimeSlot, UserInfo, EditableBooking, PaymentDetails } from '../../types';
+import type { Customer, Booking, ClassPackage, TimeSlot, UserInfo, EditableBooking, PaymentDetails, Instructor } from '../../types';
 import * as dataService from '../../services/dataService';
 import { useLanguage } from '../../context/LanguageContext';
 import { CustomerList } from './CustomerList';
@@ -15,6 +15,7 @@ import { EditBookingModal } from './EditBookingModal';
 interface CrmDashboardProps {
     navigateToEmail?: string;
     bookings: Booking[];
+    instructors: Instructor[];
     onDataChange: () => void;
     onNavigationComplete: () => void;
 }
@@ -78,7 +79,7 @@ const getRemainingClassesInfo = (customer: Customer): RemainingClassesInfo | nul
 };
 
 
-const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, onDataChange, onNavigationComplete }) => {
+const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, instructors, onDataChange, onNavigationComplete }) => {
     const { t } = useLanguage();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -273,6 +274,7 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
             {selectedCustomer ? (
                 <CustomerDetailView 
                     customer={selectedCustomer} 
+                    instructors={instructors}
                     onBack={handleBackToList} 
                     onDataChange={onDataChange} 
                     onEditBooking={handleEditBooking}
