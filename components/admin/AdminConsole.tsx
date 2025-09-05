@@ -256,4 +256,3 @@ export const AdminConsole: React.FC = () => {
     </div>
   );
 };
-
