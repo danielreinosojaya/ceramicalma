@@ -227,7 +227,7 @@ export const ScheduleSelector: React.FC<ScheduleSelectorProps> = ({ pkg, onConfi
                                                 onClick={() => handleSelect(slot)}
                                                 disabled={isFull}
                                                 className={`relative p-2 rounded-md transition-colors duration-200 font-semibold flex flex-col items-center justify-center gap-2 overflow-hidden ${
-                                                    isSelected ? 'bg-brand-text text-white ring-2 ring-offset-2 ring-brand-text' : 
+                                                    isSelected ? 'bg-brand-primary/10 ring-2 ring-offset-1 ring-brand-primary' : 
                                                     isFull ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-70' :
                                                     'bg-white border border-brand-border hover:border-brand-primary'
                                                 }`}
@@ -237,7 +237,7 @@ export const ScheduleSelector: React.FC<ScheduleSelectorProps> = ({ pkg, onConfi
                                                         {t('app.soldOut')}
                                                     </div>
                                                 )}
-                                                <span>{slot.time}</span>
+                                                <span className="text-brand-text">{slot.time}</span>
                                                 <div className="flex items-center gap-2">
                                                     <InstructorTag instructorId={slot.instructorId} instructors={appData.instructors} />
                                                     <CapacityIndicator count={slot.totalBookingsCount} max={slot.maxCapacity} capacityMessages={appData.capacityMessages} />

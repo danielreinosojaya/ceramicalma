@@ -75,15 +75,12 @@ const formatTimestamp = (dateInput: Date | string | null | undefined): string =>
         return '---';
     }
 
-    // Ensure we are working with a Date object
     const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
 
-    // Validate the date object
     if (isNaN(date.getTime())) {
-        return '---'; // Return a neutral indicator for invalid dates, preventing "Invalid Date"
+        return '---';
     }
 
-    // Use toLocaleString for a more readable timestamp format
     return date.toLocaleString(undefined, {
         year: 'numeric',
         month: 'short',
@@ -114,10 +111,14 @@ export const OpenStudioView: React.FC<OpenStudioViewProps> = ({ bookings, onNavi
 
             if (booking.isPaid && booking.paymentDetails?.receivedAt) {
                 startDate = new Date(booking.paymentDetails.receivedAt);
-                expiryDate = new Date(startDate);
-                // Precisely add the duration in milliseconds to account for the exact payment time
-                expiryDate.setMilliseconds(expiryDate.getMilliseconds() + booking.product.details.durationDays * 24 * 60 * 60 * 1000);
-                status = now < expiryDate ? 'Active' : 'Expired';
+                if (!isNaN(startDate.getTime())) {
+                    expiryDate = new Date(startDate);
+                    expiryDate.setDate(expiryDate.getDate() + booking.product.details.durationDays);
+                    status = now < expiryDate ? 'Active' : 'Expired';
+                } else {
+                    // Handle case where receivedAt might be invalid
+                    startDate = null; 
+                }
             }
 
             return { ...booking, status, startDate, expiryDate };

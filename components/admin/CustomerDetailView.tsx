@@ -36,21 +36,13 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
         return () => clearInterval(timerId);
     }, []);
 
-    const formatDate = (dateInput: Date | string | undefined | null) => {
+    const formatDate = (dateInput: Date | string | undefined | null): string => {
         if (!dateInput) return '---';
         
-        // Uniformly handle Date objects and strings
         const date = new Date(dateInput);
 
         if (isNaN(date.getTime())) {
-            // Fallback for date-only strings if initial parsing fails
-            if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-                const dateOnly = new Date(`${dateInput}T00:00:00`);
-                if (!isNaN(dateOnly.getTime())) {
-                    return dateOnly.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
-                }
-            }
-            return '---'; // Return a neutral placeholder for invalid dates
+            return '---'; 
         }
 
         return date.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -84,7 +76,11 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
     const { userInfo, totalSpent, lastBookingDate, bookings } = customer;
 
     const allBookingsSorted = useMemo(() => 
-        [...bookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        [...bookings].sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+        }),
         [bookings]
     );
 
@@ -97,12 +93,15 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
             const total = booking.product.classes;
             return <span className="text-sm">{t('admin.crm.completedOf', { completed, total })}</span>
         }
-        if (booking.productType === 'OPEN_STUDIO_SUBSCRIPTION' && booking.product.type === 'OPEN_STUDIO_SUBSCRIPTION' && booking.isPaid && booking.paymentDetails) {
+        if (booking.productType === 'OPEN_STUDIO_SUBSCRIPTION' && booking.product.type === 'OPEN_STUDIO_SUBSCRIPTION' && booking.isPaid && booking.paymentDetails?.receivedAt) {
             const startDate = new Date(booking.paymentDetails.receivedAt);
+            if (isNaN(startDate.getTime())) return <span className="text-sm text-gray-400">N/A</span>;
+            
             const expiryDate = new Date(startDate);
             const durationDays = booking.product.details.durationDays;
             expiryDate.setDate(startDate.getDate() + durationDays);
             const isActive = now < expiryDate;
+
             return (
                  <span className={`text-sm ${isActive ? 'text-brand-text' : 'text-gray-500'}`}>
                     {t('admin.crm.expiresOn', { date: formatDate(expiryDate) })}

@@ -29,6 +29,28 @@ const toCamelCase = (obj: any): any => {
     return obj;
 };
 
+/**
+ * A robust, centralized function to parse date values from the database.
+ * It handles strings, existing Date objects, and null/undefined values gracefully.
+ * @param value The value to parse.
+ * @returns A valid Date object or null if the input is invalid.
+ */
+const safeParseDate = (value: any): Date | null => {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    if (value instanceof Date) {
+        return !isNaN(value.getTime()) ? value : null;
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+        const date = new Date(value);
+        return !isNaN(date.getTime()) ? date : null;
+    }
+    console.warn(`Could not parse date from unexpected type: ${typeof value}`, value);
+    return null;
+};
+
+
 // Helper to parse database rows into correctly typed objects for the application
 const parseBookingFromDB = (dbRow: any): Booking => {
     if (!dbRow) return dbRow;
@@ -48,10 +70,12 @@ const parseBookingFromDB = (dbRow: any): Booking => {
         camelCased.product.classes = parseInt(camelCased.product.classes, 10);
     }
 
-    // Ensure date fields are Date objects
-    if (camelCased.createdAt && typeof camelCased.createdAt === 'string') {
-        camelCased.createdAt = new Date(camelCased.createdAt);
+    // Safely parse date fields
+    camelCased.createdAt = safeParseDate(camelCased.createdAt);
+    if (camelCased.paymentDetails) {
+        camelCased.paymentDetails.receivedAt = safeParseDate(camelCased.paymentDetails.receivedAt)?.toISOString();
     }
+
 
     return camelCased as Booking;
 }
@@ -59,31 +83,30 @@ const parseBookingFromDB = (dbRow: any): Booking => {
 const parseNotificationFromDB = (dbRow: any): Notification => {
     if (!dbRow) return dbRow;
     const camelCased = toCamelCase(dbRow);
-    if (camelCased.timestamp) {
-        const date = new Date(camelCased.timestamp);
-        if (isNaN(date.getTime())) {
-            console.warn(`Invalid timestamp from DB for notification: ${camelCased.timestamp}. Setting to null.`);
-            camelCased.timestamp = null; // Set to null if invalid
-        } else {
-            camelCased.timestamp = date.toISOString(); // Standardize to ISO string
-        }
-    } else {
-        camelCased.timestamp = null; // Set to null if missing
-    }
+    const parsedDate = safeParseDate(camelCased.timestamp);
+    camelCased.timestamp = parsedDate ? parsedDate.toISOString() : null;
     return camelCased as Notification;
 };
 
 const parseClientNotificationFromDB = (dbRow: any): ClientNotification => {
     if (!dbRow) return dbRow;
     const camelCased = toCamelCase(dbRow);
-    if (camelCased.createdAt && typeof camelCased.createdAt === 'string') {
-        camelCased.createdAt = new Date(camelCased.createdAt).toISOString();
-    }
-    if (camelCased.scheduledAt && typeof camelCased.scheduledAt === 'string') {
-        camelCased.scheduledAt = new Date(camelCased.scheduledAt).toISOString();
-    }
+    const createdAtDate = safeParseDate(camelCased.createdAt);
+    const scheduledAtDate = safeParseDate(camelCased.scheduledAt);
+
+    camelCased.createdAt = createdAtDate ? createdAtDate.toISOString() : null;
+    camelCased.scheduledAt = scheduledAtDate ? scheduledAtDate.toISOString() : undefined;
+
     return camelCased as ClientNotification;
 };
+
+const parseGroupInquiryFromDB = (dbRow: any): GroupInquiry => {
+    if (!dbRow) return dbRow;
+    const camelCased = toCamelCase(dbRow);
+    const createdAtDate = safeParseDate(camelCased.createdAt);
+    camelCased.createdAt = createdAtDate ? createdAtDate.toISOString() : '';
+    return camelCased as GroupInquiry;
+}
 
 
 const generateBookingCode = (): string => {
@@ -147,7 +170,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
             break;
         case 'groupInquiries':
             const { rows: inquiries } = await sql`SELECT * FROM inquiries ORDER BY created_at DESC`;
-            data = toCamelCase(inquiries);
+            data = inquiries.map(parseGroupInquiryFromDB);
             break;
         case 'notifications':
              const { rows: notifications } = await sql`SELECT * FROM notifications ORDER BY timestamp DESC`;
