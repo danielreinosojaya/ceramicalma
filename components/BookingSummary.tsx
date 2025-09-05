@@ -1,6 +1,7 @@
 
 
 
+
 import React from 'react';
 import type { BookingDetails, Product, AppData } from '../types';
 import { CalendarIcon } from './icons/CalendarIcon';
@@ -96,7 +97,6 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
                     <p className="font-semibold">{formatDate(slot.date)}</p>
                     <p className="text-sm text-brand-secondary">{slot.time}</p>
                   </div>
-                  {/* FIX: Pass appData.instructors to InstructorTag */}
                   <InstructorTag instructorId={slot.instructorId} instructors={appData.instructors} />
                 </div>
               </li>
