@@ -2,7 +2,9 @@ import type {
     Product, Booking, ScheduleOverrides, Notification, Announcement, Instructor, 
     ConfirmationMessage, ClassCapacity, EnrichedAvailableSlot, CapacityMessageSettings, 
     UITexts, FooterInfo, DayKey, AvailableSlot, GroupInquiry, AddBookingResult, 
-    PaymentDetails, AttendanceStatus, ClientNotification, AutomationSettings, ClassPackage, IntroductoryClass, OpenStudioSubscription, UserInfo, Customer, EnrichedIntroClassSession, BackgroundSettings, AppData, BankDetails, BillingDetails
+    PaymentDetails, AttendanceStatus, ClientNotification, AutomationSettings, ClassPackage, 
+    IntroductoryClass, OpenStudioSubscription, UserInfo, Customer, EnrichedIntroClassSession, 
+    BackgroundSettings, AppData, BankDetails, InvoiceRequest
 } from '../types';
 import { DAY_NAMES } from '../constants.ts';
 
@@ -108,7 +110,7 @@ export const getBookings = async (): Promise<Booking[]> => {
     const rawBookings = await getData<any[]>('bookings');
     return rawBookings.map(parseBooking);
 };
-export const addBooking = async (bookingData: Omit<Booking, 'id' | 'createdAt' | 'bookingCode'>): Promise<AddBookingResult> => {
+export const addBooking = async (bookingData: any): Promise<AddBookingResult> => {
     const result = await postAction<any>('addBooking', bookingData);
     if(result.success && result.booking) {
         return { ...result, booking: parseBooking(result.booking) };
@@ -129,11 +131,6 @@ export const rescheduleBookingSlot = async (bookingId: string, oldSlot: any, new
 export const deleteBookingsInDateRange = (startDate: Date, endDate: Date): Promise<{ success: boolean }> => postAction('deleteBookingsInDateRange', { startDate, endDate });
 export const updateAttendanceStatus = (bookingId: string, slot: any, status: AttendanceStatus): Promise<{ success: boolean }> => postAction('updateAttendanceStatus', { bookingId, slot, status });
 export const deleteBooking = (bookingId: string): Promise<{ success: boolean }> => postAction('deleteBooking', { bookingId });
-export const addBillingDetails = (bookingId: string, details: BillingDetails): Promise<{ success: boolean }> => postAction('addBillingDetails', { bookingId, details });
-
-// Customer specific actions
-export const updateCustomer = (email: string, userInfo: UserInfo): Promise<{ success: boolean }> => postAction('updateCustomer', { email, userInfo });
-export const deleteCustomer = (email: string): Promise<{ success: boolean }> => postAction('deleteCustomer', { email });
 
 // Availability & Schedule
 export const getAvailability = (): Promise<Record<DayKey, AvailableSlot[]>> => getData('availability');
@@ -148,7 +145,8 @@ export const getInstructors = async (): Promise<Instructor[]> => {
 };
 export const updateInstructors = (instructors: Instructor[]): Promise<{ success: boolean }> => setData('instructors', instructors);
 export const reassignAnddeleteInstructor = (instructorIdToDelete: number, replacementInstructorId: number): Promise<{ success: boolean }> => postAction('reassignAndDeleteInstructor', { instructorIdToDelete, replacementInstructorId });
-export const deleteInstructor = (id: number): Promise<{ success: boolean, requiresReassignment: boolean }> => postAction('deleteInstructor', { id });
+export const deleteInstructor = (id: number): Promise<{ success: boolean }> => postAction('deleteInstructor', { id });
+export const checkInstructorUsage = (instructorId: number): Promise<{ hasUsage: boolean }> => postAction('checkInstructorUsage', { instructorId });
 
 
 // Inquiries
@@ -164,6 +162,10 @@ export const addGroupInquiry = async (inquiryData: Omit<GroupInquiry, 'id' | 'st
     return parseGroupInquiry(result);
 };
 export const updateGroupInquiry = (inquiry: GroupInquiry): Promise<{ success: boolean }> => postAction('updateGroupInquiry', inquiry);
+
+// Invoicing
+export const getInvoiceRequests = (): Promise<InvoiceRequest[]> => getData('invoiceRequests');
+export const markInvoiceAsProcessed = (invoiceId: string): Promise<InvoiceRequest> => postAction('markInvoiceAsProcessed', { invoiceId });
 
 // Notifications & Announcements
 export const getNotifications = (): Promise<Notification[]> => getData('notifications');
@@ -207,17 +209,17 @@ export const getCustomers = (bookings: Booking[]): Customer[] => {
         customerMap.get(email)!.bookings.push(booking);
     }
     const customers: Customer[] = Array.from(customerMap.values()).map(data => {
-        const sortedBookings = data.bookings.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        const sortedBookings = data.bookings.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
         return {
             email: data.userInfo.email,
             userInfo: data.userInfo,
             bookings: sortedBookings,
             totalBookings: data.bookings.length,
             totalSpent: data.bookings.reduce((sum, b) => sum + (b.isPaid && typeof b.price === 'number' ? b.price : 0), 0),
-            lastBookingDate: sortedBookings.length > 0 ? sortedBookings[0].createdAt : new Date(0),
+            lastBookingDate: sortedBookings.length > 0 ? sortedBookings[0].createdAt : null,
         };
     });
-    return customers.sort((a, b) => b.lastBookingDate.getTime() - a.lastBookingDate.getTime());
+    return customers.sort((a, b) => (b.lastBookingDate?.getTime() || 0) - (a.lastBookingDate?.getTime() || 0));
 };
 
 const formatDateToYYYYMMDD = (d: Date): string => d.toISOString().split('T')[0];
@@ -338,7 +340,7 @@ export const getFutureCapacityMetrics = async (days: number): Promise<{ totalCap
         getClassCapacity()
     ]);
     
-    const appData = { products, bookings, availability, scheduleOverrides, classCapacity, instructors: [], capacityMessages: {} as any, announcements: [], policies: '', confirmationMessage: {} as any, footerInfo: {} as any };
+    const appData = { products, bookings, availability, scheduleOverrides, classCapacity, instructors: [], capacityMessages: {} as any, announcements: [], policies: '', confirmationMessage: {} as any, footerInfo: {} as any, bankDetails: {} as any };
 
     let totalCapacity = 0;
     const today = new Date();

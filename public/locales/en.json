@@ -1,3 +1,4 @@
+
 {
   "header": {
     "title": "CeramicAlma Booking"
@@ -118,7 +119,14 @@
     "validationEmail": "Please enter a valid email",
     "validationPhone": "Please enter a valid number",
     "acceptPolicies": "I have read and accept the",
-    "readPoliciesLink": "Internal Policies and Returns Process"
+    "readPoliciesLink": "Internal Policies and Returns Process",
+    "needsInvoice": "I need an invoice for this purchase.",
+    "invoiceDataTitle": "Invoicing Details",
+    "invoiceCompanyName": "Company Name / Full Name",
+    "invoiceTaxId": "Tax ID (RUC / Cédula)",
+    "invoiceAddress": "Fiscal Address",
+    "invoiceEmail": "Email for Invoice (Optional)",
+    "invoiceEmailPlaceholder": "Leave blank to use your primary email"
   },
   "policyModal": {
     "title": "Policies and Returns",
@@ -175,25 +183,7 @@
     "paymentInstruction3": "Once validated, your booking will be confirmed!",
     "whatsappButton": "Contact via WhatsApp",
     "whatsappMessage": "Hi! I want to activate my booking. My code is {{code}}.",
-    "newBookingButton": "Start New Booking",
-    "invoice": {
-      "requestButton": "Request Invoice",
-      "requestSubmittedButton": "Billing Info Received",
-      "title": "Billing Information",
-      "subtitle": "Please fill in the details to generate your invoice.",
-      "businessNameLabel": "Business Name",
-      "businessNamePlaceholder": "Your company's name",
-      "taxIdLabel": "Tax ID / VAT Number",
-      "taxIdPlaceholder": "Your company's tax identifier",
-      "addressLabel": "Billing Address",
-      "addressPlaceholder": "Full address for the invoice",
-      "emailLabel": "Billing Email",
-      "emailPlaceholder": "billing@company.com",
-      "submitButton": "Save Information",
-      "successTitle": "Information Saved!",
-      "successMessage": "We have received your billing details. The invoice will be sent to your email.",
-      "closeButton": "Close"
-    }
+    "newBookingButton": "Start New Booking"
   },
   "pdf": {
     "title": "Booking Ticket",
@@ -221,6 +211,7 @@
     "scheduleTab": "Schedule Management",
     "scheduleSettingsTab": "Schedule Settings",
     "inquiriesTab": "Inquiries",
+    "invoicingTab": "Invoicing",
     "communicationsTab": "Communications",
     "financialsTab": "Financial Center",
     "customersTab": "Customers",
@@ -245,6 +236,28 @@
         "type_CLASS_REMINDER": "Class Reminder",
         "status_Sent": "Sent",
         "status_Scheduled": "Scheduled"
+    },
+    "invoiceManager": {
+        "title": "Invoice Requests",
+        "subtitle": "Manage and track all client invoice requests.",
+        "requestedAt": "Requested At",
+        "customer": "Customer",
+        "company": "Company Details",
+        "status": "Status",
+        "actions": "Actions",
+        "statusPending": "Pending",
+        "statusProcessed": "Processed",
+        "markAsProcessed": "Mark as Processed",
+        "noRequests": "No invoice requests found.",
+        "filterAll": "All",
+        "filterPending": "Pending",
+        "filterProcessed": "Processed"
+    },
+    "invoiceReminderModal": {
+      "title": "Invoice Requested",
+      "message": "This customer has requested an invoice for their purchase. Remember to process it from the Invoicing module to comply with fiscal requirements.",
+      "proceedButton": "Proceed with Payment",
+      "goToInvoicingButton": "Go to Invoicing"
     },
     "inquiryManager": {
       "title": "Event Inquiries",
@@ -297,6 +310,7 @@
       "productType_CLASS_PACKAGE": "Class Package",
       "productType_OPEN_STUDIO_SUBSCRIPTION": "Subscription",
       "productType_GROUP_EXPERIENCE": "Group Experience",
+      "productType_COUPLES_EXPERIENCE": "Couples Experience",
       "introClass": "Introductory Class",
       "classPackage": "Class Package",
       "openStudioSubscription": "Open Studio Subscription"
@@ -304,7 +318,8 @@
      "introClassModal": {
       "createTitle": "Create New Introductory Class",
       "editTitle": "Edit Introductory Class",
-      "schedulingRulesTitle": "Recurring Scheduling Rules",
+      "rulesTitle": "Recurring Scheduling Rules",
+      "rulesSubtitle": "Define the weekly repeating schedule for this class.",
       "addRuleButton": "Add Rule",
       "dayOfWeekLabel": "Day of Week",
       "timeLabel": "Time",
@@ -364,8 +379,9 @@
       "classesLabel": "Number of Classes",
       "priceLabel": "Price ($)",
       "descriptionLabel": "Description",
-      "imageLabel": "Imagen",
+      "imageLabel": "Image",
       "uploadImageButton": "Upload Image",
+      "detailsSectionTitle": "Product Details",
       "durationLabel": "Duration per Class (Text)",
       "durationHoursLabel": "Duration (Hours)",
       "activitiesLabel": "Activities (one per line)",
@@ -499,7 +515,8 @@
       "title": "Notification Center",
       "noNotifications": "You have no notifications.",
       "template_new_booking": "{{name}} booked '{{summary}}'.",
-      "template_new_inquiry": "{{name}} sent an inquiry for '{{summary}}'."
+      "template_new_inquiry": "{{name}} sent an inquiry for '{{summary}}'.",
+      "template_new_invoice_request": "{{name}} requested an invoice for booking {{summary}}."
     },
     "financialDashboard": {
       "title": "Financial Center",
@@ -576,20 +593,37 @@
       "backToList": "Back to customer list",
       "customerProfile": "Customer Profile",
       "lifetimeValue": "Lifetime Value (LTV)",
+      "totalClassesBooked": "Total Classes Booked",
       "lastBooking": "Last Booking",
+      "noShowRate": "No-Show Rate",
+      "subscriptions": "Subscriptions",
+      "noSubscriptions": "No subscriptions found for this customer.",
+      "purchasedOn": "Purchased",
+      "expiresOn": "Expires on {{date}}",
+      "statusActive": "Active",
+      "statusExpired": "Expired",
+      "activePackages": "Active Products",
+      "noActivePackages": "No active products with future classes.",
+      "scheduledClasses": "Scheduled Classes",
+      "classDate": "Class Date",
+      "noUpcomingClasses": "No upcoming classes scheduled.",
+      "progressText": "{{completed}} of {{total}} classes completed",
+      "bookingHistory": "Booking History",
       "bookingAndPrebookingHistory": "Booking and Pre-booking History",
+      "bookingCode": "Booking Code",
+      "paymentHistory": "Payment History",
+      "noPaymentsFound": "No payments found.",
       "date": "Date",
       "package": "Product",
       "status": "Status",
+      "amount": "Amount",
+      "progress": "Progress",
       "progressExpiry": "Progress / Expiry",
+      "classStatusCompleted": "Completed",
+      "classStatusUpcoming": "Upcoming",
       "completedOf": "{{completed}} of {{total}} completed",
       "allCustomersTab": "All Customers",
       "openStudioTab": "Open Studio",
-      "activePackages": "Active Packages",
-      "noActivePackages": "This customer has no active packages.",
-      "scheduledClasses": "Scheduled Classes",
-      "expiresOn": "Expires on {{date}}",
-      "instructorRole": "INSTRUCTOR",
       "openStudio": {
           "status": "Status",
           "startDate": "Start Date",
@@ -610,18 +644,8 @@
           "1left": "1 Class Left",
           "completed": "Package Completed"
       },
-      "actions": "Actions",
-      "editCustomer": "Edit Customer",
-      "deleteCustomer": "Delete Customer",
-      "acceptPayment": "Accept Payment",
-      "editBooking": "Edit Booking",
-      "deleteBooking": "Delete Booking",
       "deleteBookingTitle": "Delete Booking",
       "deleteBookingMessage": "Are you sure you want to permanently delete booking {{code}}? This action cannot be undone.",
-      "deleteCustomerConfirmTitle": "Delete Customer?",
-      "deleteCustomerConfirmMessage": "Are you sure you want to delete {{name}}? All their bookings and history will be permanently removed. This action cannot be undone.",
-      "editCustomerModalTitle": "Edit Customer Information",
-      "saveButton": "Save",
       "page": "Page",
       "of": "of",
       "previous": "Previous",
@@ -634,25 +658,25 @@
       "contentManagerSubtitle": "Manage all customer-facing texts and messages from one place.",
       "paymentSettings": {
         "title": "Payment Settings",
-        "subtitle": "Configure the bank details for wire transfers."
+        "subtitle": "Configure bank details for transfers."
       },
       "bankDetails": {
         "title": "Bank Details",
-        "subtitle": "This information will be displayed to customers on the confirmation screen.",
+        "subtitle": "This information will be shown to customers on the confirmation screen.",
         "bankName": "Bank Name",
         "accountHolder": "Account Holder Name",
         "accountNumber": "Account Number",
         "accountType": "Account Type (e.g., Checking, Savings)",
-        "taxId": "Tax ID / Identifier (RUT, CUIT, etc.)",
+        "taxId": "Tax ID / Identifier",
         "details": "Other Details (SWIFT, IBAN, etc.)",
         "saveButton": "Save Bank Details",
-        "savedMessage": "Bank details saved!"
+        "savedMessage": "Details saved!"
       },
       "automation": {
-        "managerTitle": "Communication Automation Center",
-        "managerSubtitle": "Configure and enable automated client communications.",
-        "title": "Communication Automation",
-        "subtitle": "Activate and configure automated notifications for your clients.",
+        "managerTitle": "Communications Automation Center",
+        "managerSubtitle": "Configure and activate automated communications with clients.",
+        "title": "Communications Automation",
+        "subtitle": "Activate and configure automatic notifications for your clients.",
         "preBookingConfirmation": "Pre-Booking Confirmation",
         "paymentReceipt": "Payment Receipt",
         "classReminder": "Class Reminder",
@@ -661,9 +685,9 @@
         "days": "days",
         "beforeClass": "before the class.",
         "saveButton": "Save Automations",
-        "savedMessage": "Automation settings saved!",
-        "envVarTitle": "Configuration Required",
-        "envVarMessage": "For emails to send correctly, you must configure the following environment variables in your hosting service (e.g., Vercel):"
+        "savedMessage": "Settings saved!",
+        "envVarTitle": "Required Setup",
+        "envVarMessage": "For emails to be sent correctly, you must set the following environment variables in your hosting service (e.g., Vercel):"
       },
       "policiesLabel": "Policies and Returns Process",
       "saveButton": "Save Policies",
@@ -675,7 +699,7 @@
       "confirmationSavedMessage": "Message saved successfully!",
       "classCapacityTitle": "Default Class Capacity (for Packages)",
       "saveCapacityButton": "Save Capacity",
-      "capacitySavedMessage": "Capacity saved successfully!",
+      "capacitySavedMessage": "Capacity saved!",
       "capacityMessagesTitle": "Capacity Indicator Messages",
       "levelAvailable": "Available",
       "levelFew": "Few Spots",
@@ -684,11 +708,11 @@
       "messageLabel": "Tooltip Message",
       "saveMessagesButton": "Save Messages",
       "messagesSavedMessage": "Messages saved successfully!",
-      "uiTextTitle": "Interface Text Editor",
+      "uiTextTitle": "UI Text Editor",
       "uiTextSubtitle": "Modify the texts users see in the application.",
       "saveUiTextButton": "Save Texts",
       "uiTextSavedMessage": "UI texts saved!",
-      "footerInfoTitle": "PDF Footer Information",
+      "footerInfoTitle": "Footer Information (PDF)",
       "footerInfoSubtitle": "This information will appear in the footer of all generated PDF tickets and reports.",
       "addressLabel": "Address",
       "emailLabel": "Public Email",
@@ -696,33 +720,33 @@
       "googleMapsLabel": "Google Maps Link",
       "instagramLabel": "Instagram Handle",
       "saveFooterButton": "Save Footer Info",
-      "footerSavedMessage": "Footer info saved!",
+      "footerSavedMessage": "Info saved!",
       "notificationTemplatesTitle": "Notification Templates",
-      "notificationTemplatesSubtitle": "Customize the notification texts. Use {{name}} for the customer's name and {{summary}} for the product name or inquiry type.",
+      "notificationTemplatesSubtitle": "Customize notification texts. Use {{name}} for the customer's name and {{summary}} for the product name or inquiry type.",
       "bookingTemplateLabel": "New Booking Template",
       "inquiryTemplateLabel": "New Inquiry Template",
       "saveNotificationTemplatesButton": "Save Templates",
       "notificationTemplatesSavedMessage": "Templates saved!",
       "prerequisiteMessageTitle": "Prerequisite Message for Returning Students",
-      "prerequisiteMessageSubtitle": "This message is shown to users who select 'I'm a Returning Student' before they see the packages.",
+      "prerequisiteMessageSubtitle": "This message will be shown to users who select 'I'm a Returning Student' before they see the packages.",
       "prerequisiteModalTitleLabel": "Modal Title",
       "prerequisiteModalMessageLabel": "Message Body",
-      "prerequisiteConfirmButtonLabel": "Confirmation Button Text",
+      "prerequisiteConfirmButtonLabel": "Confirm Button Text",
       "prerequisiteGoToIntroButtonLabel": "Redirect Button Text",
       "savePrerequisiteButton": "Save Message",
       "prerequisiteSavedMessage": "Message saved!",
       "requiredFieldIndicator": "*"
     },
     "errors": {
-      "DUPLICATE_BOOKING_ERROR": "Este usuario ya está registrado para esta clase en este día y hora.",
-      "UNPAID_BOOKING_EXISTS": "Este usuario ya tiene una reserva pendiente. Por favor, completa el pago antes de crear una nueva.",
-      "SLOT_NOT_FOUND": "El horario original no se pudo encontrar para reagendar.",
-      "BOOKING_NOT_FOUND": "La reserva no se pudo encontrar.",
-      "SLOT_FULL": "Esta clase ya está llena."
+      "DUPLICATE_BOOKING_ERROR": "This user is already registered for this class on this day and time.",
+      "UNPAID_BOOKING_EXISTS": "This user already has a pending pre-booking. Please complete the payment before creating a new one.",
+      "SLOT_NOT_FOUND": "The original slot could not be found to reschedule.",
+      "BOOKING_NOT_FOUND": "The booking could not be found.",
+      "SLOT_FULL": "This class is already full."
     },
     "app": {
-        "loading": "Cargando",
-        "soldOut": "Agotado"
+        "loading": "Loading",
+        "soldOut": "Sold Out"
     }
   }
 }

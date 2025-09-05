@@ -132,7 +132,14 @@
     "validationEmail": "Introduce un email válido",
     "validationPhone": "Introduce un número válido",
     "acceptPolicies": "He leído y acepto las",
-    "readPoliciesLink": "Políticas Internas y Proceso de Devoluciones"
+    "readPoliciesLink": "Políticas Internas y Proceso de Devoluciones",
+    "needsInvoice": "Necesito factura para esta compra.",
+    "invoiceDataTitle": "Datos de Facturación",
+    "invoiceCompanyName": "Razón Social / Nombre Completo",
+    "invoiceTaxId": "RUC / Cédula",
+    "invoiceAddress": "Dirección Fiscal",
+    "invoiceEmail": "Email para Factura (Opcional)",
+    "invoiceEmailPlaceholder": "Dejar en blanco para usar tu email principal"
   },
   "policyModal": {
     "title": "Políticas y Devoluciones",
@@ -234,6 +241,7 @@
     "scheduleTab": "Gestión de Horarios",
     "scheduleSettingsTab": "Configuración de Horarios",
     "inquiriesTab": "Consultas",
+    "invoicingTab": "Facturación",
     "communicationsTab": "Comunicaciones",
     "financialsTab": "Centro Financiero",
     "customersTab": "Clientes",
@@ -258,6 +266,28 @@
       "type_CLASS_REMINDER": "Recordatorio de Clase",
       "status_Sent": "Enviado",
       "status_Scheduled": "Programado"
+    },
+    "invoiceManager": {
+        "title": "Solicitudes de Factura",
+        "subtitle": "Gestiona y haz seguimiento a todas las solicitudes de factura de clientes.",
+        "requestedAt": "Fecha Solicitud",
+        "customer": "Cliente",
+        "company": "Datos de la Empresa",
+        "status": "Estado",
+        "actions": "Acciones",
+        "statusPending": "Pendiente",
+        "statusProcessed": "Procesada",
+        "markAsProcessed": "Marcar como Procesada",
+        "noRequests": "No se encontraron solicitudes de factura.",
+        "filterAll": "Todas",
+        "filterPending": "Pendientes",
+        "filterProcessed": "Procesadas"
+    },
+    "invoiceReminderModal": {
+      "title": "Factura Solicitada",
+      "message": "Este cliente ha solicitado una factura para su compra. Recuerda procesarla desde el módulo de Facturación para cumplir con los requerimientos fiscales.",
+      "proceedButton": "Continuar con el Pago",
+      "goToInvoicingButton": "Ir a Facturación"
     },
     "inquiryManager": {
       "title": "Consultas de Eventos",
@@ -310,6 +340,7 @@
       "productType_CLASS_PACKAGE": "Paquete Clases",
       "productType_OPEN_STUDIO_SUBSCRIPTION": "Suscripción",
       "productType_GROUP_EXPERIENCE": "Experiencia Grupal",
+      "productType_COUPLES_EXPERIENCE": "Experiencia en Pareja",
       "introClass": "Clase Introductoria",
       "classPackage": "Paquete de Clases",
       "openStudioSubscription": "Suscripción Open Studio"
@@ -512,7 +543,8 @@
       "title": "Centro de Notificaciones",
       "noNotifications": "No tienes notificaciones.",
       "template_new_booking": "{{name}} ha reservado '{{summary}}'.",
-      "template_new_inquiry": "{{name}} ha enviado una consulta para '{{summary}}'."
+      "template_new_inquiry": "{{name}} ha enviado una consulta para '{{summary}}'.",
+      "template_new_invoice_request": "{{name}} solicitó una factura para la reserva {{summary}}."
     },
     "financialDashboard": {
       "title": "Centro Financiero",
@@ -686,8 +718,8 @@
       "confirmationMessageLabel": "Cuerpo del Mensaje",
       "saveConfirmationButton": "Guardar Mensaje",
       "confirmationSavedMessage": "¡Mensaje guardado con éxito!",
-      "classCapacityTitle": "Capacidad por Defecto (para Paquetes)",
-      "saveCapacityButton": "Guardar Capacidad",
+      "classCapacityTitle": "Default Class Capacity (for Packages)",
+      "saveCapacityButton": "Save Capacity",
       "capacitySavedMessage": "¡Capacidad guardada con éxito!",
       "capacityMessagesTitle": "Mensajes de Indicador de Cupos",
       "levelAvailable": "Disponible",

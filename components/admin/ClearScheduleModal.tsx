@@ -141,7 +141,7 @@ export const ClearScheduleModal: React.FC<ClearScheduleModalProps> = ({ isOpen, 
                 
                 <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
                     <button type="button" onClick={onClose} className="bg-white border border-brand-secondary text-brand-secondary font-bold py-2 px-6 rounded-lg hover:bg-gray-100">
-                        {t('admin.packageManager.cancelButton')}
+                        {t('admin.productManager.cancelButton')}
                     </button>
                     <button 
                         type="button" 

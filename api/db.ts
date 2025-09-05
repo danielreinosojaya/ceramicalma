@@ -86,6 +86,18 @@ const SCHEMA_SQL = `
         booking_code VARCHAR(50),
         scheduled_at TIMESTAMPTZ
     );
+    
+    CREATE TABLE IF NOT EXISTS invoice_requests (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE,
+        status VARCHAR(50) NOT NULL,
+        company_name VARCHAR(255) NOT NULL,
+        tax_id VARCHAR(255) NOT NULL,
+        address TEXT NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        requested_at TIMESTAMPTZ DEFAULT NOW(),
+        processed_at TIMESTAMPTZ
+    );
 `;
 
 export async function ensureTablesExist() {

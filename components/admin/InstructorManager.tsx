@@ -54,25 +54,26 @@ export const InstructorManager: React.FC<InstructorManagerProps> = ({ onInstruct
     
     const handleDeleteRequest = async (instructor: Instructor) => {
         setInstructorToDelete(instructor);
-        const result = await dataService.deleteInstructor(instructor.id);
-        if (result.success) {
-            setIsDeleteModalOpen(true);
-        } else if (result.requiresReassignment) {
+        const { hasUsage } = await dataService.checkInstructorUsage(instructor.id);
+        if (hasUsage) {
             setIsReassignModalOpen(true);
+        } else {
+            setIsDeleteModalOpen(true);
         }
     };
     
-    const handleDeleteConfirm = () => {
+    const handleDeleteConfirm = async () => {
         if (instructorToDelete) {
+           await dataService.deleteInstructor(instructorToDelete.id);
            onInstructorsUpdate();
            setIsDeleteModalOpen(false);
            setInstructorToDelete(null);
         }
     };
     
-    const handleReassignAndDelete = (replacementInstructorId: number) => {
+    const handleReassignAndDelete = async (replacementInstructorId: number) => {
         if (instructorToDelete) {
-            dataService.reassignAnddeleteInstructor(instructorToDelete.id, replacementInstructorId);
+            await dataService.reassignAnddeleteInstructor(instructorToDelete.id, replacementInstructorId);
             onInstructorsUpdate();
             setIsReassignModalOpen(false);
             setInstructorToDelete(null);

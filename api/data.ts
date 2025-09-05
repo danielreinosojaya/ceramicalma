@@ -2,11 +2,12 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { sql } from '@vercel/postgres';
 import { seedDatabase, ensureTablesExist } from './db.js';
 import * as emailService from './emailService.js';
+// FIX: Corrected import paths and added missing types.
 import type { 
     Product, Booking, ScheduleOverrides, Notification, Announcement, Instructor, 
     ConfirmationMessage, ClassCapacity, CapacityMessageSettings, UITexts, FooterInfo, 
     GroupInquiry, AddBookingResult, PaymentDetails, AttendanceStatus,
-    InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo, BankDetails, TimeSlot, ClientNotification, BillingDetails
+    InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo, BankDetails, TimeSlot, ClientNotification, InvoiceRequest
 } from '../types.js';
 import { 
     DEFAULT_PRODUCTS, DEFAULT_AVAILABLE_SLOTS_BY_DAY, DEFAULT_INSTRUCTORS, 
@@ -29,6 +30,34 @@ const toCamelCase = (obj: any): any => {
     return obj;
 };
 
+/**
+ * A robust, centralized function to parse date values from the database.
+ * It handles strings, existing Date objects, and null/undefined values gracefully.
+ * @param value The value to parse.
+ * @returns A valid Date object or null if the input is invalid.
+ */
+const safeParseDate = (value: any): Date | null => {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    if (value instanceof Date) {
+        return !isNaN(value.getTime()) ? value : null;
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+        if (value === '') return null; // Prevent empty strings from becoming invalid dates
+        const date = new Date(value);
+        return !isNaN(date.getTime()) ? date : null;
+    }
+    // Handle empty objects `{}` which can sometimes be returned by the DB for JSON fields
+    if (typeof value === 'object' && Object.keys(value).length === 0) {
+        return null;
+    }
+
+    console.warn(`Could not parse date from unexpected type: ${typeof value}`, value);
+    return null;
+};
+
+
 // Helper to parse database rows into correctly typed objects for the application
 const parseBookingFromDB = (dbRow: any): Booking => {
     if (!dbRow) return dbRow;
@@ -48,10 +77,12 @@ const parseBookingFromDB = (dbRow: any): Booking => {
         camelCased.product.classes = parseInt(camelCased.product.classes, 10);
     }
 
-    // Ensure date fields are Date objects
-    if (camelCased.createdAt && typeof camelCased.createdAt === 'string') {
-        camelCased.createdAt = new Date(camelCased.createdAt);
+    // Safely parse date fields
+    camelCased.createdAt = safeParseDate(camelCased.createdAt);
+    if (camelCased.paymentDetails) {
+        camelCased.paymentDetails.receivedAt = safeParseDate(camelCased.paymentDetails.receivedAt)?.toISOString();
     }
+
 
     return camelCased as Booking;
 }
@@ -59,30 +90,37 @@ const parseBookingFromDB = (dbRow: any): Booking => {
 const parseNotificationFromDB = (dbRow: any): Notification => {
     if (!dbRow) return dbRow;
     const camelCased = toCamelCase(dbRow);
-    if (camelCased.timestamp) {
-        const date = new Date(camelCased.timestamp);
-        if (isNaN(date.getTime())) {
-            console.warn(`Invalid timestamp from DB for notification: ${camelCased.timestamp}. Setting to null.`);
-            camelCased.timestamp = null; // Set to null if invalid
-        } else {
-            camelCased.timestamp = date.toISOString(); // Standardize to ISO string
-        }
-    } else {
-        camelCased.timestamp = null; // Set to null if missing
-    }
+    const parsedDate = safeParseDate(camelCased.timestamp);
+    camelCased.timestamp = parsedDate ? parsedDate.toISOString() : null;
     return camelCased as Notification;
 };
 
 const parseClientNotificationFromDB = (dbRow: any): ClientNotification => {
     if (!dbRow) return dbRow;
     const camelCased = toCamelCase(dbRow);
-    if (camelCased.createdAt && typeof camelCased.createdAt === 'string') {
-        camelCased.createdAt = new Date(camelCased.createdAt).toISOString();
-    }
-    if (camelCased.scheduledAt && typeof camelCased.scheduledAt === 'string') {
-        camelCased.scheduledAt = new Date(camelCased.scheduledAt).toISOString();
-    }
+    const createdAtDate = safeParseDate(camelCased.createdAt);
+    const scheduledAtDate = safeParseDate(camelCased.scheduledAt);
+
+    camelCased.createdAt = createdAtDate ? createdAtDate.toISOString() : null;
+    camelCased.scheduledAt = scheduledAtDate ? scheduledAtDate.toISOString() : undefined;
+
     return camelCased as ClientNotification;
+};
+
+const parseGroupInquiryFromDB = (dbRow: any): GroupInquiry => {
+    if (!dbRow) return dbRow;
+    const camelCased = toCamelCase(dbRow);
+    const createdAtDate = safeParseDate(camelCased.createdAt);
+    camelCased.createdAt = createdAtDate ? createdAtDate.toISOString() : '';
+    return camelCased as GroupInquiry;
+}
+
+const parseInvoiceRequestFromDB = (dbRow: any): InvoiceRequest => {
+    if (!dbRow) return dbRow;
+    const camelCased = toCamelCase(dbRow);
+    camelCased.requestedAt = safeParseDate(camelCased.requestedAt)?.toISOString();
+    camelCased.processedAt = safeParseDate(camelCased.processedAt)?.toISOString();
+    return camelCased as InvoiceRequest;
 };
 
 
@@ -113,7 +151,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else if (req.method === 'POST') {
             await handlePost(req, res);
         } else {
-            res.setHeader('Allow', ['GET', 'POST']);
+            res.setHeader('Allow', ['GET, POST']);
             res.status(405).end(`Method ${req.method} Not Allowed`);
         }
     } catch (error) {
@@ -147,7 +185,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
             break;
         case 'groupInquiries':
             const { rows: inquiries } = await sql`SELECT * FROM inquiries ORDER BY created_at DESC`;
-            data = toCamelCase(inquiries);
+            data = inquiries.map(parseGroupInquiryFromDB);
             break;
         case 'notifications':
              const { rows: notifications } = await sql`SELECT * FROM notifications ORDER BY timestamp DESC`;
@@ -156,6 +194,15 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
         case 'clientNotifications':
             const { rows: clientNotifications } = await sql`SELECT * FROM client_notifications ORDER BY created_at DESC`;
             data = clientNotifications.map(parseClientNotificationFromDB);
+            break;
+        case 'invoiceRequests':
+            const { rows: invoiceRequests } = await sql`
+                SELECT i.*, b.booking_code, b.user_info
+                FROM invoice_requests i
+                JOIN bookings b ON i.booking_id = b.id
+                ORDER BY i.requested_at DESC
+            `;
+            data = invoiceRequests.map(parseInvoiceRequestFromDB);
             break;
         default:
             const { rows: settings } = await sql`SELECT value FROM settings WHERE key = ${key}`;
@@ -236,31 +283,6 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
             break;
         case 'deleteBooking':
             await sql`DELETE FROM bookings WHERE id = ${body.bookingId}`;
-            break;
-        case 'addBillingDetails':
-            const { bookingId, details: billingDetails } = body;
-            await sql`UPDATE bookings SET billing_details = ${JSON.stringify(billingDetails)} WHERE id = ${bookingId}`;
-            break;
-        case 'updateCustomer':
-            const { email: oldEmail, userInfo: updatedUserInfo } = body;
-            // Update user_info in all bookings for this customer
-            const { rows: customerBookings } = await sql`SELECT id, user_info FROM bookings WHERE user_info->>'email' = ${oldEmail}`;
-            await sql`BEGIN`;
-            for (const booking of customerBookings) {
-                const newInfo = { ...booking.user_info, ...updatedUserInfo };
-                await sql`UPDATE bookings SET user_info = ${JSON.stringify(newInfo)} WHERE id = ${booking.id}`;
-            }
-            // Also update inquiries if they exist
-            await sql`UPDATE inquiries SET name = ${`${updatedUserInfo.firstName} ${updatedUserInfo.lastName}`}, email = ${updatedUserInfo.email}, phone = ${updatedUserInfo.phone}, country_code = ${updatedUserInfo.countryCode} WHERE email = ${oldEmail}`;
-            await sql`COMMIT`;
-            break;
-        case 'deleteCustomer':
-            const { email: emailToDelete } = body;
-            await sql`BEGIN`;
-            // This is a hard delete, it removes all related records
-            await sql`DELETE FROM bookings WHERE user_info->>'email' = ${emailToDelete}`;
-            await sql`DELETE FROM inquiries WHERE email = ${emailToDelete}`;
-            await sql`COMMIT`;
             break;
         case 'removeBookingSlot':
             const { bookingId: removeId, slotToRemove } = body;
@@ -349,6 +371,26 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
         case 'updateGroupInquiry':
             await sql`UPDATE inquiries SET status = ${body.status} WHERE id = ${body.id}`;
             break;
+        case 'checkInstructorUsage':
+            const { instructorId } = body;
+            const { rows: productUsage } = await sql`
+                SELECT 1 FROM products WHERE EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(scheduling_rules) AS rule
+                    WHERE (rule->>'instructorId')::int = ${instructorId}
+                ) OR EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(overrides) AS override,
+                    jsonb_array_elements(override->'sessions') AS session
+                    WHERE (session->>'instructorId')::int = ${instructorId}
+                ) LIMIT 1
+            `;
+            const { rows: bookingUsage } = await sql`
+                SELECT 1 FROM bookings WHERE EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(slots) AS slot
+                    WHERE (slot->>'instructorId')::int = ${instructorId}
+                ) LIMIT 1
+            `;
+            result = { hasUsage: productUsage.length > 0 || bookingUsage.length > 0 };
+            break;
         case 'reassignAndDeleteInstructor':
             const { instructorIdToDelete, replacementInstructorId } = body;
             await sql`BEGIN`;
@@ -367,6 +409,15 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
             await sql`UPDATE notifications SET read = true`;
             const { rows: notifications } = await sql`SELECT * FROM notifications ORDER BY timestamp DESC`;
             result = notifications.map(parseNotificationFromDB);
+            break;
+        case 'markInvoiceAsProcessed':
+            const { rows: [processedInvoice] } = await sql`
+                UPDATE invoice_requests
+                SET status = 'Processed', processed_at = NOW()
+                WHERE id = ${body.invoiceId}
+                RETURNING *;
+            `;
+            result = parseInvoiceRequestFromDB(processedInvoice);
             break;
         case 'triggerScheduledNotifications':
             const { rows: settingsRows } = await sql`SELECT value FROM settings WHERE key = 'automationSettings'`;
@@ -429,8 +480,8 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
 }
 
 
-async function addBookingAction(body: Omit<Booking, 'id' | 'createdAt' | 'bookingCode'>): Promise<AddBookingResult> {
-    const { productId, slots, userInfo, productType } = body;
+async function addBookingAction(body: Omit<Booking, 'id' | 'createdAt' | 'bookingCode'> & { invoiceData?: Omit<InvoiceRequest, 'id' | 'bookingId' | 'status' | 'requestedAt' | 'processedAt'> }): Promise<AddBookingResult> {
+    const { productId, slots, userInfo, productType, invoiceData } = body;
 
     // Server-side validation
     if (productType === 'INTRODUCTORY_CLASS' || productType === 'CLASS_PACKAGE') {
@@ -462,7 +513,21 @@ async function addBookingAction(body: Omit<Booking, 'id' | 'createdAt' | 'bookin
     
     const fullyParsedBooking = parseBookingFromDB(insertedRow);
 
-    // Create admin notification
+    // Create invoice request if data is provided
+    if (invoiceData) {
+        const { rows: [invoiceRequestRow] } = await sql`
+            INSERT INTO invoice_requests (booking_id, status, company_name, tax_id, address, email)
+            VALUES (${fullyParsedBooking.id}, 'Pending', ${invoiceData.companyName}, ${invoiceData.taxId}, ${invoiceData.address}, ${invoiceData.email})
+            RETURNING id;
+        `;
+        // Create notification for new invoice request
+        await sql`
+            INSERT INTO notifications (type, target_id, user_name, summary)
+            VALUES ('new_invoice_request', ${invoiceRequestRow.id}, ${`${userInfo.firstName} ${userInfo.lastName}`}, ${fullyParsedBooking.bookingCode});
+        `;
+    }
+
+    // Create admin notification for new booking
     await sql`
       INSERT INTO notifications (type, target_id, user_name, summary)
       VALUES ('new_booking', ${fullyParsedBooking.id}, ${`${userInfo.firstName} ${userInfo.lastName}`}, ${newBooking.product.name});

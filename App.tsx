@@ -7,7 +7,7 @@ import { BookingSummary } from './components/BookingSummary';
 import { ClassInfoModal } from './components/ClassInfoModal';
 import { UserInfoModal } from './components/UserInfoModal';
 import { AdminConsole } from './components/admin/AdminConsole';
-import type { Product, ClassPackage, TimeSlot, BookingDetails, UserInfo, Booking, BookingMode, ConfirmationMessage, IntroClassSession, FooterInfo, GroupInquiry, AppView, DayKey, AvailableSlot, ScheduleOverrides, Instructor, ClassCapacity, CapacityMessageSettings, Announcement, AppData, BankDetails, BillingDetails } from './types';
+import type { Product, ClassPackage, TimeSlot, BookingDetails, UserInfo, Booking, BookingMode, ConfirmationMessage, IntroClassSession, FooterInfo, GroupInquiry, AppView, DayKey, AvailableSlot, ScheduleOverrides, Instructor, ClassCapacity, CapacityMessageSettings, Announcement, AppData, BankDetails, InvoiceRequest } from './types';
 import { generateBookingPDF } from './services/pdfService';
 import { useLanguage } from './context/LanguageContext';
 import * as dataService from './services/dataService';
@@ -23,7 +23,13 @@ import { MailIcon } from './components/icons/MailIcon';
 import { GroupInquiryForm } from './components/GroupInquiryForm';
 import { PrerequisiteModal } from './components/PrerequisiteModal';
 import { NotificationProvider } from './context/NotificationContext';
-import { InvoiceInfoModal } from './components/InvoiceInfoModal';
+
+interface InvoiceData {
+    companyName: string;
+    taxId: string;
+    address: string;
+    email: string;
+}
 
 const App: React.FC = () => {
   const { t, language, isTranslationsReady } = useLanguage();
@@ -47,8 +53,6 @@ const App: React.FC = () => {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingMode, setBookingMode] = useState<BookingMode>('flexible');
   const [inquirySubmitted, setInquirySubmitted] = useState(false);
-  const [billingInfoSubmitted, setBillingInfoSubmitted] = useState(false);
-
 
   // Modal State
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
@@ -56,7 +60,6 @@ const App: React.FC = () => {
   const [isPolicyModalVisible, setIsPolicyModalVisible] = useState(false);
   const [isBookingTypeModalVisible, setIsBookingTypeModalVisible] = useState(false);
   const [isPrerequisiteModalVisible, setIsPrerequisiteModalVisible] = useState(false);
-  const [isInvoiceModalVisible, setIsInvoiceModalVisible] = useState(false);
   
   const [copied, setCopied] = useState(false);
   const [copiedAccount, setCopiedAccount] = useState(false);
@@ -120,7 +123,6 @@ const App: React.FC = () => {
     setConfirmedBooking(null);
     setBookingError(null);
     setInquirySubmitted(false);
-    setBillingInfoSubmitted(false);
   }, []);
 
   const handleProductSelect = useCallback((product: Product) => {
@@ -180,13 +182,13 @@ const App: React.FC = () => {
     packageName: product.name,
     packageDetailsTitle: t('pdf.packageDetailsTitle'),
     durationLabel: t('modal.durationLabel'),
-    durationValue: product.type !== 'OPEN_STUDIO_SUBSCRIPTION' && product.type !== 'GROUP_EXPERIENCE' && product.type !== 'COUPLES_EXPERIENCE' ? product.details.duration : (product.type === 'OPEN_STUDIO_SUBSCRIPTION' ? `${product.details.durationDays} days` : ''),
+    durationValue: product.type !== 'OPEN_STUDIO_SUBSCRIPTION' && product.type !== 'GROUP_EXPERIENCE' && product.type !== 'COUPLES_EXPERIENCE' ? (product as ClassPackage).details.duration : (product.type === 'OPEN_STUDIO_SUBSCRIPTION' ? `${product.details.durationDays} days` : ''),
     activitiesLabel: t('modal.activitiesLabel'),
-    activitiesValue: product.type !== 'OPEN_STUDIO_SUBSCRIPTION' && product.type !== 'GROUP_EXPERIENCE' && product.type !== 'COUPLES_EXPERIENCE' ? product.details.activities : [],
+    activitiesValue: product.type !== 'OPEN_STUDIO_SUBSCRIPTION' && product.type !== 'GROUP_EXPERIENCE' && product.type !== 'COUPLES_EXPERIENCE' ? (product as ClassPackage).details.activities : [],
     generalRecommendationsLabel: t('modal.generalRecommendationsLabel'),
-    generalRecommendationsValue: product.type !== 'OPEN_STUDIO_SUBSCRIPTION' && product.type !== 'GROUP_EXPERIENCE' && product.type !== 'COUPLES_EXPERIENCE' ? product.details.generalRecommendations : '',
+    generalRecommendationsValue: product.type !== 'OPEN_STUDIO_SUBSCRIPTION' && product.type !== 'GROUP_EXPERIENCE' && product.type !== 'COUPLES_EXPERIENCE' ? (product as ClassPackage).details.generalRecommendations : '',
     materialsLabel: t('modal.materialsLabel'),
-    materialsValue: product.type !== 'OPEN_STUDIO_SUBSCRIPTION' && product.type !== 'GROUP_EXPERIENCE' && product.type !== 'COUPLES_EXPERIENCE' ? product.details.materials : '',
+    materialsValue: product.type !== 'OPEN_STUDIO_SUBSCRIPTION' && product.type !== 'GROUP_EXPERIENCE' && product.type !== 'COUPLES_EXPERIENCE' ? (product as ClassPackage).details.materials : '',
     scheduleTitle: t('pdf.scheduleTitle'),
     dateHeader: t('pdf.dateHeader'),
     timeHeader: t('pdf.timeHeader'),
@@ -205,8 +207,8 @@ const App: React.FC = () => {
     setIsUserInfoModalVisible(true);
   }, [selectedProduct]);
 
-  const handleUserInfoSubmit = useCallback(async (info: UserInfo) => {
-      setUserInfo(info);
+  const handleUserInfoSubmit = useCallback(async (data: { userInfo: UserInfo, needsInvoice: boolean, invoiceData?: InvoiceData }) => {
+      setUserInfo(data.userInfo);
       setIsUserInfoModalVisible(false);
 
       if (selectedProduct) {
@@ -217,11 +219,12 @@ const App: React.FC = () => {
           productId: selectedProduct.id,
           productType: selectedProduct.type as 'CLASS_PACKAGE' | 'INTRODUCTORY_CLASS' | 'OPEN_STUDIO_SUBSCRIPTION',
           slots: selectedSlots,
-          userInfo: info,
+          userInfo: data.userInfo,
           isPaid: false,
           price: (selectedProduct as any).price,
           bookingMode,
           product: selectedProduct,
+          invoiceData: data.needsInvoice ? data.invoiceData : undefined
         };
         
         try {
@@ -243,13 +246,6 @@ const App: React.FC = () => {
         }
       }
   }, [selectedProduct, selectedSlots, bookingMode, t, refetchData]);
-
-  const handleInvoiceInfoSubmit = useCallback(async (details: BillingDetails) => {
-      if (!confirmedBooking) return;
-      await dataService.addBillingDetails(confirmedBooking.id, details);
-      setBillingInfoSubmitted(true);
-      // We keep the modal open to show the success message, it's closed from within the modal.
-  }, [confirmedBooking]);
 
   const handleCopyCode = () => {
     if (confirmedBooking?.bookingCode) {
@@ -365,16 +361,6 @@ const App: React.FC = () => {
                 <p className="mt-4 text-xs text-brand-secondary text-center">{t('confirmation.transferReference', { code: confirmedBooking.bookingCode })}</p>
             </div>
           )}
-          
-          <div className="mt-4">
-              <button
-                  onClick={() => setIsInvoiceModalVisible(true)}
-                  disabled={billingInfoSubmitted}
-                  className="text-brand-secondary font-semibold hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
-              >
-                  {billingInfoSubmitted ? t('confirmation.invoice.requestSubmittedButton') : t('confirmation.invoice.requestButton')}
-              </button>
-          </div>
 
           <div className="mt-8 text-left max-w-md mx-auto">
             <h3 className="text-lg font-semibold text-brand-text mb-4">{t('confirmation.paymentInstructionsTitle')}</h3>
@@ -487,12 +473,6 @@ const App: React.FC = () => {
             onClose={() => setIsPrerequisiteModalVisible(false)}
             onConfirm={() => { setIsPrerequisiteModalVisible(false); navigateTo('packages'); }}
             onGoToIntro={() => { setIsPrerequisiteModalVisible(false); navigateTo('intro_classes'); }}
-        />
-      )}
-       {isInvoiceModalVisible && confirmedBooking && (
-        <InvoiceInfoModal
-          onClose={() => setIsInvoiceModalVisible(false)}
-          onSubmit={handleInvoiceInfoSubmit}
         />
       )}
       
