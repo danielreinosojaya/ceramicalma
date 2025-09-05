@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Instructor } from '@/types';
 import { PALETTE_COLORS } from '@/constants';
-import { AcademicCapIcon } from './icons/AcademicCapIcon';
+import { useLanguage } from '../context/LanguageContext';
 
 interface InstructorTagProps {
   instructorId: number;
@@ -9,6 +9,7 @@ interface InstructorTagProps {
 }
 
 export const InstructorTag: React.FC<InstructorTagProps> = ({ instructorId, instructors }) => {
+  const { t } = useLanguage();
   const instructor = instructors.find(i => i.id === instructorId);
   if (!instructor) {
     return null;
@@ -16,12 +17,16 @@ export const InstructorTag: React.FC<InstructorTagProps> = ({ instructorId, inst
 
   const color = PALETTE_COLORS.find(c => c.name === instructor.colorScheme) || PALETTE_COLORS.find(c => c.name === 'secondary');
 
-  const tagClasses = `inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-bold rounded-full ${color?.bg} ${color?.text}`;
+  const tagClasses = `inline-flex items-center text-xs font-bold rounded-full ${color?.bg} ${color?.text} overflow-hidden`;
 
   return (
     <span className={tagClasses}>
-      <AcademicCapIcon className="w-3.5 h-3.5" />
-      {instructor.name}
+      <span className="bg-black/10 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
+        {t('admin.crm.instructorRole')}
+      </span>
+      <span className="pl-1.5 pr-2.5">
+        {instructor.name}
+      </span>
     </span>
   );
 };

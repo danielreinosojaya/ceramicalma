@@ -188,7 +188,25 @@
     "paymentInstruction3": "¡Una vez validado, tu reserva quedará confirmada!",
     "whatsappButton": "Contactar por WhatsApp",
     "whatsappMessage": "¡Hola! Quiero activar mi reserva. Mi código es {{code}}.",
-    "newBookingButton": "Iniciar Nueva Reserva"
+    "newBookingButton": "Iniciar Nueva Reserva",
+    "invoice": {
+      "requestButton": "Solicitar Factura",
+      "requestSubmittedButton": "Datos de Facturación Recibidos",
+      "title": "Datos de Facturación",
+      "subtitle": "Por favor, completa la información para generar tu factura.",
+      "businessNameLabel": "Razón Social",
+      "businessNamePlaceholder": "Nombre de tu empresa",
+      "taxIdLabel": "RUC / Cédula / Identificación Fiscal",
+      "taxIdPlaceholder": "Tu número de identificación fiscal",
+      "addressLabel": "Dirección Fiscal",
+      "addressPlaceholder": "Dirección completa para la factura",
+      "emailLabel": "Email para Facturación",
+      "emailPlaceholder": "email@empresa.com",
+      "submitButton": "Guardar Datos",
+      "successTitle": "¡Información Guardada!",
+      "successMessage": "Hemos recibido tus datos de facturación. La factura será enviada a tu correo.",
+      "closeButton": "Cerrar"
+    }
   },
   "pdf": {
     "title": "Ticket de Reserva",

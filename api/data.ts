@@ -6,7 +6,7 @@ import type {
     Product, Booking, ScheduleOverrides, Notification, Announcement, Instructor, 
     ConfirmationMessage, ClassCapacity, CapacityMessageSettings, UITexts, FooterInfo, 
     GroupInquiry, AddBookingResult, PaymentDetails, AttendanceStatus,
-    InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo, BankDetails, TimeSlot, ClientNotification
+    InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo, BankDetails, TimeSlot, ClientNotification, BillingDetails
 } from '../types.js';
 import { 
     DEFAULT_PRODUCTS, DEFAULT_AVAILABLE_SLOTS_BY_DAY, DEFAULT_INSTRUCTORS, 
@@ -236,6 +236,10 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
             break;
         case 'deleteBooking':
             await sql`DELETE FROM bookings WHERE id = ${body.bookingId}`;
+            break;
+        case 'addBillingDetails':
+            const { bookingId, details: billingDetails } = body;
+            await sql`UPDATE bookings SET billing_details = ${JSON.stringify(billingDetails)} WHERE id = ${bookingId}`;
             break;
         case 'updateCustomer':
             const { email: oldEmail, userInfo: updatedUserInfo } = body;

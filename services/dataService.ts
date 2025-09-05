@@ -2,7 +2,7 @@ import type {
     Product, Booking, ScheduleOverrides, Notification, Announcement, Instructor, 
     ConfirmationMessage, ClassCapacity, EnrichedAvailableSlot, CapacityMessageSettings, 
     UITexts, FooterInfo, DayKey, AvailableSlot, GroupInquiry, AddBookingResult, 
-    PaymentDetails, AttendanceStatus, ClientNotification, AutomationSettings, ClassPackage, IntroductoryClass, OpenStudioSubscription, UserInfo, Customer, EnrichedIntroClassSession, BackgroundSettings, AppData, BankDetails
+    PaymentDetails, AttendanceStatus, ClientNotification, AutomationSettings, ClassPackage, IntroductoryClass, OpenStudioSubscription, UserInfo, Customer, EnrichedIntroClassSession, BackgroundSettings, AppData, BankDetails, BillingDetails
 } from '../types';
 import { DAY_NAMES } from '../constants.ts';
 
@@ -129,6 +129,7 @@ export const rescheduleBookingSlot = async (bookingId: string, oldSlot: any, new
 export const deleteBookingsInDateRange = (startDate: Date, endDate: Date): Promise<{ success: boolean }> => postAction('deleteBookingsInDateRange', { startDate, endDate });
 export const updateAttendanceStatus = (bookingId: string, slot: any, status: AttendanceStatus): Promise<{ success: boolean }> => postAction('updateAttendanceStatus', { bookingId, slot, status });
 export const deleteBooking = (bookingId: string): Promise<{ success: boolean }> => postAction('deleteBooking', { bookingId });
+export const addBillingDetails = (bookingId: string, details: BillingDetails): Promise<{ success: boolean }> => postAction('addBillingDetails', { bookingId, details });
 
 // Customer specific actions
 export const updateCustomer = (email: string, userInfo: UserInfo): Promise<{ success: boolean }> => postAction('updateCustomer', { email, userInfo });

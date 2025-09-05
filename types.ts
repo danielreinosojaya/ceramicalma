@@ -1,8 +1,3 @@
-
-
-
-
-
 export type AppView = 'welcome' | 'packages' | 'intro_classes' | 'schedule' | 'group_experience' | 'couples_experience' | 'summary';
 
 export type DayKey = 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
@@ -139,6 +134,13 @@ export interface PaymentDetails {
 
 export type AttendanceStatus = 'attended' | 'no-show';
 
+export interface BillingDetails {
+  businessName: string;
+  taxId: string;
+  address: string;
+  email: string;
+}
+
 export interface Booking {
   id: string;
   productId: number;
@@ -153,6 +155,7 @@ export interface Booking {
   bookingCode?: string;
   paymentDetails?: PaymentDetails;
   attendance?: { [slotIdentifier: string]: AttendanceStatus }; // slotIdentifier is `${date}_${time}`
+  billingDetails?: BillingDetails;
 }
 
 
