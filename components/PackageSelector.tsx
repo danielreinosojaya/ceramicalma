@@ -1,8 +1,4 @@
 
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import type { Product, OpenStudioSubscription, ClassPackage } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -37,18 +33,19 @@ export const PackageSelector: React.FC<PackageSelectorProps> = ({ onSelect }) =>
             return (
               <div
                 key={openStudioPkg.id}
-                className="bg-brand-text bg-brushed-clay rounded-xl overflow-hidden transition-all duration-300 cursor-pointer flex flex-col shadow-subtle hover:shadow-lifted transform hover:-translate-y-1 group"
+                className="bg-[linear-gradient(145deg,_#4A4540_0%,_#5f5953_100%)] rounded-xl overflow-hidden transition-all duration-300 cursor-pointer flex flex-col shadow-subtle hover:shadow-[0_0_25px_rgba(204,188,178,0.2)] transform hover:-translate-y-1 group relative"
                 onClick={() => onSelect(openStudioPkg)}
               >
-                <div className="relative p-8 flex-grow flex flex-col text-left">
-                  <div className="mb-4">
-                    <span className="bg-brand-primary/20 text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
-                      {t('admin.productManager.openStudioSubscription')}
-                    </span>
-                  </div>
-                  
+                {/* Watermark Icon */}
+                <KeyIcon className="w-48 h-48 text-brand-surface/5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 transition-transform duration-500 group-hover:scale-110" />
+
+                {/* Exclusivity Seal */}
+                <div className="absolute top-0 right-0 bg-black/30 text-white/80 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-bl-lg z-20">
+                    {t('admin.productManager.openStudioSubscription')}
+                </div>
+                
+                <div className="relative p-8 flex-grow flex flex-col text-left z-10">
                   <div className="flex items-center gap-3">
-                    <KeyIcon className="w-8 h-8 text-brand-accent flex-shrink-0"/>
                     <h3 className="text-3xl font-semibold text-brand-surface">{openStudioPkg.name}</h3>
                   </div>
                   <p className="text-brand-surface/80 mt-2 text-sm flex-grow">{openStudioPkg.description}</p>
@@ -58,14 +55,13 @@ export const PackageSelector: React.FC<PackageSelectorProps> = ({ onSelect }) =>
                         <p className="text-5xl font-bold text-brand-surface">${openStudioPkg.price}</p>
                         <p className="text-sm font-normal text-brand-surface/70 -mt-1">{t('packages.perMonth')}</p>
                     </div>
-                    <button className="w-full bg-brand-surface text-brand-text font-bold py-3 px-5 rounded-lg hover:bg-brand-accent hover:text-white transition-colors duration-300">
+                    <button className="w-full bg-brand-surface text-brand-text font-bold py-3 px-5 rounded-lg group-hover:bg-brand-accent group-hover:text-white transition-colors duration-300">
                       {t('packages.selectSubscriptionButton')}
                     </button>
                   </div>
                 </div>
               </div>
             );
-          // FIX: Use 'else if' to narrow the type of 'pkg' to 'ClassPackage', making properties like 'price' and 'classes' type-safe.
           } else if (pkg.type === 'CLASS_PACKAGE') {
             return (
               <div 
