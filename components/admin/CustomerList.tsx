@@ -1,10 +1,14 @@
 import React from 'react';
 import type { AugmentedCustomer, RemainingClassesInfo } from './CrmDashboard';
 import { useLanguage } from '../../context/LanguageContext';
+import { EditIcon } from '../icons/EditIcon';
+import { TrashIcon } from '../icons/TrashIcon';
 
 interface CustomerListProps {
     customers: AugmentedCustomer[];
     onSelectCustomer: (customer: AugmentedCustomer) => void;
+    onEditCustomer: (customer: AugmentedCustomer) => void;
+    onDeleteCustomer: (customer: AugmentedCustomer) => void;
 }
 
 const StatusTag: React.FC<{ info: RemainingClassesInfo }> = ({ info }) => {
@@ -38,7 +42,7 @@ const StatusTag: React.FC<{ info: RemainingClassesInfo }> = ({ info }) => {
 }
 
 
-export const CustomerList: React.FC<CustomerListProps> = ({ customers, onSelectCustomer }) => {
+export const CustomerList: React.FC<CustomerListProps> = ({ customers, onSelectCustomer, onEditCustomer, onDeleteCustomer }) => {
     const { t } = useLanguage();
 
     return (
@@ -51,6 +55,7 @@ export const CustomerList: React.FC<CustomerListProps> = ({ customers, onSelectC
                             <th className="px-6 py-3 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.status')}</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.totalBookings')}</th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.totalSpent')}</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -69,10 +74,28 @@ export const CustomerList: React.FC<CustomerListProps> = ({ customers, onSelectC
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-text text-right font-semibold">
                                     ${customer.totalSpent.toFixed(2)}
                                 </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); onEditCustomer(customer); }} 
+                                            className="p-2 rounded-md text-brand-secondary hover:text-brand-accent hover:bg-gray-100" 
+                                            title={t('admin.crm.editCustomer')}
+                                        >
+                                            <EditIcon className="w-5 h-5" />
+                                        </button>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); onDeleteCustomer(customer); }} 
+                                            className="p-2 rounded-md text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            title={t('admin.crm.deleteCustomer')}
+                                        >
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan={4} className="text-center py-8 text-brand-secondary">
+                                <td colSpan={5} className="text-center py-8 text-brand-secondary">
                                     {t('admin.crm.noCustomers')}
                                 </td>
                             </tr>

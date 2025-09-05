@@ -130,6 +130,10 @@ export const deleteBookingsInDateRange = (startDate: Date, endDate: Date): Promi
 export const updateAttendanceStatus = (bookingId: string, slot: any, status: AttendanceStatus): Promise<{ success: boolean }> => postAction('updateAttendanceStatus', { bookingId, slot, status });
 export const deleteBooking = (bookingId: string): Promise<{ success: boolean }> => postAction('deleteBooking', { bookingId });
 
+// Customer specific actions
+export const updateCustomer = (email: string, userInfo: UserInfo): Promise<{ success: boolean }> => postAction('updateCustomer', { email, userInfo });
+export const deleteCustomer = (email: string): Promise<{ success: boolean }> => postAction('deleteCustomer', { email });
+
 // Availability & Schedule
 export const getAvailability = (): Promise<Record<DayKey, AvailableSlot[]>> => getData('availability');
 export const updateAvailability = (availability: Record<DayKey, AvailableSlot[]>): Promise<{ success: boolean }> => setData('availability', availability);

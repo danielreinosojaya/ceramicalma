@@ -6,7 +6,7 @@ import { MailIcon } from '../icons/MailIcon';
 import { PhoneIcon } from '../icons/PhoneIcon';
 import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
 import { TrashIcon } from '../icons/TrashIcon';
-import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { EditIcon } from '../icons/EditIcon';
 
 const KPICard: React.FC<{ title: string; value: string | number; }> = ({ title, value }) => (
     <div className="bg-brand-background p-4 rounded-lg">
@@ -23,13 +23,18 @@ const getSlotDateTime = (slot: TimeSlot) => {
 };
 
 
-export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => void; onDataChange: () => void; }> = ({ customer, onBack, onDataChange }) => {
+export const CustomerDetailView: React.FC<{ 
+    customer: Customer; 
+    onBack: () => void; 
+    onDataChange: () => void; 
+    onEditBooking: (booking: Booking) => void;
+    onDeleteBooking: (booking: Booking) => void;
+}> = ({ customer, onBack, onDataChange, onEditBooking, onDeleteBooking }) => {
     const { t, language } = useLanguage();
     
     const [now, setNow] = useState(new Date());
     const [bookingsPage, setBookingsPage] = useState(1);
     const recordsPerPage = 5;
-    const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
 
     useEffect(() => {
         const timerId = setInterval(() => setNow(new Date()), 60000);
@@ -68,18 +73,6 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
             onDataChange();
         }
     };
-    
-    const handleDeleteRequest = (booking: Booking) => {
-        setBookingToDelete(booking);
-    };
-
-    const handleDeleteConfirm = async () => {
-        if (bookingToDelete) {
-            await dataService.deleteBooking(bookingToDelete.id);
-            setBookingToDelete(null);
-            onDataChange();
-        }
-    };
 
     const { userInfo, totalSpent, lastBookingDate, bookings } = customer;
 
@@ -114,15 +107,6 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
 
     return (
         <div className="animate-fade-in">
-            {bookingToDelete && (
-                <DeleteConfirmationModal
-                    isOpen={!!bookingToDelete}
-                    onClose={() => setBookingToDelete(null)}
-                    onConfirm={handleDeleteConfirm}
-                    title={t('admin.crm.deleteBookingTitle')}
-                    message={t('admin.crm.deleteBookingMessage', { code: bookingToDelete.bookingCode || 'N/A' })}
-                />
-            )}
             <button onClick={onBack} className="text-brand-secondary hover:text-brand-accent mb-4 transition-colors font-semibold">
                 &larr; {t('admin.crm.backToList')}
             </button>
@@ -169,8 +153,9 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                                             </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-right">
                                                 <div className="flex items-center justify-end">
+                                                    <button onClick={() => onEditBooking(b)} title={t('admin.crm.editBooking')} className="p-2 rounded-full text-brand-secondary hover:text-brand-accent hover:bg-gray-100 transition-colors"><EditIcon className="w-5 h-5"/></button>
                                                     <button onClick={() => handleTogglePaidStatus(b)} title={t('admin.bookingModal.togglePaid')} className={`p-2 rounded-full transition-colors ${b.isPaid ? 'text-brand-success hover:bg-green-100' : 'text-gray-400 hover:bg-gray-200'}`}><CurrencyDollarIcon className="w-5 h-5"/></button>
-                                                    <button onClick={() => handleDeleteRequest(b)} title="Delete Booking" className="p-2 rounded-full text-red-500 hover:bg-red-100"><TrashIcon className="w-5 h-5" /></button>
+                                                    <button onClick={() => onDeleteBooking(b)} title={t('admin.crm.deleteBooking')} className="p-2 rounded-full text-red-500 hover:bg-red-100"><TrashIcon className="w-5 h-5" /></button>
                                                 </div>
                                             </td>
                                         </tr>
