@@ -132,7 +132,14 @@
     "validationEmail": "Introduce un email válido",
     "validationPhone": "Introduce un número válido",
     "acceptPolicies": "He leído y acepto las",
-    "readPoliciesLink": "Políticas Internas y Proceso de Devoluciones"
+    "readPoliciesLink": "Políticas Internas y Proceso de Devoluciones",
+    "needsInvoice": "Necesito factura para esta compra.",
+    "invoiceDataTitle": "Datos de Facturación",
+    "invoiceCompanyName": "Razón Social / Nombre Completo",
+    "invoiceTaxId": "RUC / Cédula",
+    "invoiceAddress": "Dirección Fiscal",
+    "invoiceEmail": "Email para Factura (Opcional)",
+    "invoiceEmailPlaceholder": "Dejar en blanco para usar tu email principal"
   },
   "policyModal": {
     "title": "Políticas y Devoluciones",
@@ -216,6 +223,7 @@
     "scheduleTab": "Gestión de Horarios",
     "scheduleSettingsTab": "Configuración de Horarios",
     "inquiriesTab": "Consultas",
+    "invoicingTab": "Facturación",
     "communicationsTab": "Comunicaciones",
     "financialsTab": "Centro Financiero",
     "customersTab": "Clientes",
@@ -240,6 +248,22 @@
       "type_CLASS_REMINDER": "Recordatorio de Clase",
       "status_Sent": "Enviado",
       "status_Scheduled": "Programado"
+    },
+    "invoiceManager": {
+        "title": "Solicitudes de Factura",
+        "subtitle": "Gestiona y haz seguimiento a todas las solicitudes de factura de clientes.",
+        "requestedAt": "Fecha Solicitud",
+        "customer": "Cliente",
+        "company": "Datos de la Empresa",
+        "status": "Estado",
+        "actions": "Acciones",
+        "statusPending": "Pendiente",
+        "statusProcessed": "Procesada",
+        "markAsProcessed": "Marcar como Procesada",
+        "noRequests": "No se encontraron solicitudes de factura.",
+        "filterAll": "Todas",
+        "filterPending": "Pendientes",
+        "filterProcessed": "Procesadas"
     },
     "inquiryManager": {
       "title": "Consultas de Eventos",
@@ -494,7 +518,8 @@
       "title": "Centro de Notificaciones",
       "noNotifications": "No tienes notificaciones.",
       "template_new_booking": "{{name}} ha reservado '{{summary}}'.",
-      "template_new_inquiry": "{{name}} ha enviado una consulta para '{{summary}}'."
+      "template_new_inquiry": "{{name}} ha enviado una consulta para '{{summary}}'.",
+      "template_new_invoice_request": "{{name}} solicitó una factura para la reserva {{summary}}."
     },
     "financialDashboard": {
       "title": "Centro Financiero",

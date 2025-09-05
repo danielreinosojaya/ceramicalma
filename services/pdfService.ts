@@ -1,5 +1,3 @@
-
-
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import type { Booking, FooterInfo, Product, Instructor } from '../types';
@@ -161,46 +159,32 @@ export const generateBookingPDF = async (booking: Booking, translations: PdfTran
   doc.line(pageMargin, currentY, pageWidth - pageMargin, currentY); // Underline
   currentY += 8;
   
-  // FIX: Refactored detail function to use splitTextToSize for precise height calculation, preventing overlaps.
   const detail = (label: string, value: string | string[], y: number): number => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(brandAccent);
-    // Draw the label at the specified y position
     doc.text(label, pageMargin + 5, y);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(brandText);
     
-    const valueX = pageMargin + 55; // Increased space for the label
+    const valueX = pageMargin + 55;
     const maxWidth = pageWidth - valueX - pageMargin;
     
-    let textToRender: string;
-    if (Array.isArray(value)) {
-        textToRender = value.length > 0 ? value.map(item => `- ${item}`).join('\n') : '';
-    } else {
-        textToRender = value || '';
-    }
+    let textToRender = Array.isArray(value) 
+        ? value.map(item => `- ${item}`).join('\n') 
+        : value || '';
 
-    if (!textToRender) {
-      return y + 4; // Add a small gap even if there is no content
-    }
+    if (!textToRender.trim()) return y + 4;
 
     const lines = doc.splitTextToSize(textToRender, maxWidth);
     doc.text(lines, valueX, y);
 
-    // Calculate height based on line count and line height from jsPDF
     const lineHeight = doc.getLineHeight() / doc.internal.scaleFactor;
     const textHeight = lines.length * lineHeight;
-
-    // Also check label height in case it wraps (less likely, but safe)
-    const labelLines = doc.splitTextToSize(label, 50); // Approx width for label column
-    const labelHeight = labelLines.length * lineHeight;
-
-    const blockHeight = Math.max(textHeight, labelHeight);
     
-    return y + blockHeight + 6; // Return new Y position with a consistent 6mm padding
+    return y + textHeight + 6;
   };
 
   currentY = detail(translations.durationLabel, translations.durationValue, currentY);
@@ -255,32 +239,25 @@ export const generateBookingPDF = async (booking: Booking, translations: PdfTran
   }
 
   // --- IMPORTANT INFO ---
-  // 1. Calculate the height needed for the policy text
   const policyText = translations.policy;
-  const policyMaxWidth = pageWidth - (pageMargin * 2) - 10; // 5mm padding on each side
+  const policyMaxWidth = pageWidth - (pageMargin * 2) - 10;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const policyLines = doc.splitTextToSize(policyText, policyMaxWidth);
   const lineHeight = doc.getLineHeight() / doc.internal.scaleFactor;
   const policyTextHeight = policyLines.length * lineHeight;
-
-  // 2. Calculate the total dynamic height for the box.
-  // Top margin for title (8mm), space below title (7mm), text height, and bottom margin (5mm)
   const dynamicInfoBoxHeight = 8 + 7 + policyTextHeight + 5;
-  const spaceForFooter = 30; // Increased space for the new footer
+  const spaceForFooter = 30;
 
-  // 3. Check for page break with the new dynamic height
   if (currentY + dynamicInfoBoxHeight + spaceForFooter > pageHeight) {
     doc.addPage();
     currentY = pageMargin + 10;
   }
 
-  // 4. Draw the dynamically sized box
   doc.setDrawColor(brandSecondary);
   doc.setLineWidth(0.25);
   doc.roundedRect(pageMargin, currentY, pageWidth - (pageMargin * 2), dynamicInfoBoxHeight, 3, 3, 'S');
 
-  // 5. Render the content inside the box
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(brandText);
@@ -289,7 +266,6 @@ export const generateBookingPDF = async (booking: Booking, translations: PdfTran
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(brandSecondary);
-  // Use the pre-calculated lines to render the text
   doc.text(policyLines, pageMargin + 5, currentY + 15);
   
   // --- FOOTER ---

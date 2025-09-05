@@ -118,7 +118,14 @@
     "validationEmail": "Please enter a valid email",
     "validationPhone": "Please enter a valid number",
     "acceptPolicies": "I have read and accept the",
-    "readPoliciesLink": "Internal Policies and Returns Process"
+    "readPoliciesLink": "Internal Policies and Returns Process",
+    "needsInvoice": "I need an invoice for this purchase.",
+    "invoiceDataTitle": "Invoicing Details",
+    "invoiceCompanyName": "Company Name / Full Name",
+    "invoiceTaxId": "Tax ID (RUC / Cédula)",
+    "invoiceAddress": "Fiscal Address",
+    "invoiceEmail": "Email for Invoice (Optional)",
+    "invoiceEmailPlaceholder": "Leave blank to use your primary email"
   },
   "policyModal": {
     "title": "Policies and Returns",
@@ -203,6 +210,7 @@
     "scheduleTab": "Schedule Management",
     "scheduleSettingsTab": "Schedule Settings",
     "inquiriesTab": "Inquiries",
+    "invoicingTab": "Invoicing",
     "communicationsTab": "Communications",
     "financialsTab": "Financial Center",
     "customersTab": "Customers",
@@ -227,6 +235,22 @@
         "type_CLASS_REMINDER": "Class Reminder",
         "status_Sent": "Sent",
         "status_Scheduled": "Scheduled"
+    },
+    "invoiceManager": {
+        "title": "Invoice Requests",
+        "subtitle": "Manage and track all client invoice requests.",
+        "requestedAt": "Requested At",
+        "customer": "Customer",
+        "company": "Company Details",
+        "status": "Status",
+        "actions": "Actions",
+        "statusPending": "Pending",
+        "statusProcessed": "Processed",
+        "markAsProcessed": "Mark as Processed",
+        "noRequests": "No invoice requests found.",
+        "filterAll": "All",
+        "filterPending": "Pending",
+        "filterProcessed": "Processed"
     },
     "inquiryManager": {
       "title": "Event Inquiries",
@@ -481,7 +505,8 @@
       "title": "Notification Center",
       "noNotifications": "You have no notifications.",
       "template_new_booking": "{{name}} booked '{{summary}}'.",
-      "template_new_inquiry": "{{name}} sent an inquiry for '{{summary}}'."
+      "template_new_inquiry": "{{name}} sent an inquiry for '{{summary}}'.",
+      "template_new_invoice_request": "{{name}} requested an invoice for booking {{summary}}."
     },
     "financialDashboard": {
       "title": "Financial Center",
