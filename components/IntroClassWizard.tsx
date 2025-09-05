@@ -204,9 +204,13 @@ export const IntroClassWizard: React.FC<IntroClassWizardProps> = ({ product, ses
             </div>
 
             <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
-                 <button onClick={goBack} disabled={step === 'month'} className="text-brand-secondary font-semibold hover:underline disabled:opacity-50">
-                    {t('introClass.wizard.backButton')}
-                </button>
+                {step !== 'month' ? (
+                    <button onClick={goBack} className="text-brand-secondary font-semibold hover:underline">
+                        {t('introClass.wizard.backButton')}
+                    </button>
+                ) : (
+                    <div /> // Placeholder to keep the 'Continue' button to the right
+                )}
                  <button
                     onClick={handleConfirm}
                     disabled={!selectedTime}
