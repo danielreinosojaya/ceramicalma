@@ -322,6 +322,7 @@
       "productType_CLASS_PACKAGE": "Paquete Clases",
       "productType_OPEN_STUDIO_SUBSCRIPTION": "Suscripción",
       "productType_GROUP_EXPERIENCE": "Experiencia Grupal",
+      "productType_COUPLES_EXPERIENCE": "Experiencia en Pareja",
       "introClass": "Clase Introductoria",
       "classPackage": "Paquete de Clases",
       "openStudioSubscription": "Suscripción Open Studio"
@@ -706,8 +707,8 @@
       "confirmationMessageLabel": "Cuerpo del Mensaje",
       "saveConfirmationButton": "Guardar Mensaje",
       "confirmationSavedMessage": "¡Mensaje guardado con éxito!",
-      "classCapacityTitle": "Capacidad por Defecto (para Paquetes)",
-      "saveCapacityButton": "Guardar Capacidad",
+      "classCapacityTitle": "Default Class Capacity (for Packages)",
+      "saveCapacityButton": "Save Capacity",
       "capacitySavedMessage": "¡Capacidad guardada con éxito!",
       "capacityMessagesTitle": "Mensajes de Indicador de Cupos",
       "levelAvailable": "Disponible",

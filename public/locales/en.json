@@ -1,3 +1,4 @@
+
 {
   "header": {
     "title": "CeramicAlma Booking"
@@ -309,6 +310,7 @@
       "productType_CLASS_PACKAGE": "Class Package",
       "productType_OPEN_STUDIO_SUBSCRIPTION": "Subscription",
       "productType_GROUP_EXPERIENCE": "Group Experience",
+      "productType_COUPLES_EXPERIENCE": "Couples Experience",
       "introClass": "Introductory Class",
       "classPackage": "Class Package",
       "openStudioSubscription": "Open Studio Subscription"
@@ -316,7 +318,8 @@
      "introClassModal": {
       "createTitle": "Create New Introductory Class",
       "editTitle": "Edit Introductory Class",
-      "schedulingRulesTitle": "Recurring Scheduling Rules",
+      "rulesTitle": "Recurring Scheduling Rules",
+      "rulesSubtitle": "Define the weekly repeating schedule for this class.",
       "addRuleButton": "Add Rule",
       "dayOfWeekLabel": "Day of Week",
       "timeLabel": "Time",
@@ -376,8 +379,9 @@
       "classesLabel": "Number of Classes",
       "priceLabel": "Price ($)",
       "descriptionLabel": "Description",
-      "imageLabel": "Imagen",
+      "imageLabel": "Image",
       "uploadImageButton": "Upload Image",
+      "detailsSectionTitle": "Product Details",
       "durationLabel": "Duration per Class (Text)",
       "durationHoursLabel": "Duration (Hours)",
       "activitiesLabel": "Activities (one per line)",
@@ -654,25 +658,25 @@
       "contentManagerSubtitle": "Manage all customer-facing texts and messages from one place.",
       "paymentSettings": {
         "title": "Payment Settings",
-        "subtitle": "Configure the bank details for wire transfers."
+        "subtitle": "Configure bank details for transfers."
       },
       "bankDetails": {
         "title": "Bank Details",
-        "subtitle": "This information will be displayed to customers on the confirmation screen.",
+        "subtitle": "This information will be shown to customers on the confirmation screen.",
         "bankName": "Bank Name",
         "accountHolder": "Account Holder Name",
         "accountNumber": "Account Number",
         "accountType": "Account Type (e.g., Checking, Savings)",
-        "taxId": "Tax ID / Identifier (RUT, CUIT, etc.)",
+        "taxId": "Tax ID / Identifier",
         "details": "Other Details (SWIFT, IBAN, etc.)",
         "saveButton": "Save Bank Details",
-        "savedMessage": "Bank details saved!"
+        "savedMessage": "Details saved!"
       },
       "automation": {
-        "managerTitle": "Communication Automation Center",
-        "managerSubtitle": "Configure and enable automated client communications.",
-        "title": "Communication Automation",
-        "subtitle": "Activate and configure automated notifications for your clients.",
+        "managerTitle": "Communications Automation Center",
+        "managerSubtitle": "Configure and activate automated communications with clients.",
+        "title": "Communications Automation",
+        "subtitle": "Activate and configure automatic notifications for your clients.",
         "preBookingConfirmation": "Pre-Booking Confirmation",
         "paymentReceipt": "Payment Receipt",
         "classReminder": "Class Reminder",
@@ -681,9 +685,9 @@
         "days": "days",
         "beforeClass": "before the class.",
         "saveButton": "Save Automations",
-        "savedMessage": "Automation settings saved!",
-        "envVarTitle": "Configuration Required",
-        "envVarMessage": "For emails to send correctly, you must configure the following environment variables in your hosting service (e.g., Vercel):"
+        "savedMessage": "Settings saved!",
+        "envVarTitle": "Required Setup",
+        "envVarMessage": "For emails to be sent correctly, you must set the following environment variables in your hosting service (e.g., Vercel):"
       },
       "policiesLabel": "Policies and Returns Process",
       "saveButton": "Save Policies",
@@ -695,7 +699,7 @@
       "confirmationSavedMessage": "Message saved successfully!",
       "classCapacityTitle": "Default Class Capacity (for Packages)",
       "saveCapacityButton": "Save Capacity",
-      "capacitySavedMessage": "Capacity saved successfully!",
+      "capacitySavedMessage": "Capacity saved!",
       "capacityMessagesTitle": "Capacity Indicator Messages",
       "levelAvailable": "Available",
       "levelFew": "Few Spots",
@@ -704,11 +708,11 @@
       "messageLabel": "Tooltip Message",
       "saveMessagesButton": "Save Messages",
       "messagesSavedMessage": "Messages saved successfully!",
-      "uiTextTitle": "Interface Text Editor",
+      "uiTextTitle": "UI Text Editor",
       "uiTextSubtitle": "Modify the texts users see in the application.",
       "saveUiTextButton": "Save Texts",
       "uiTextSavedMessage": "UI texts saved!",
-      "footerInfoTitle": "PDF Footer Information",
+      "footerInfoTitle": "Footer Information (PDF)",
       "footerInfoSubtitle": "This information will appear in the footer of all generated PDF tickets and reports.",
       "addressLabel": "Address",
       "emailLabel": "Public Email",
@@ -716,18 +720,18 @@
       "googleMapsLabel": "Google Maps Link",
       "instagramLabel": "Instagram Handle",
       "saveFooterButton": "Save Footer Info",
-      "footerSavedMessage": "Footer info saved!",
+      "footerSavedMessage": "Info saved!",
       "notificationTemplatesTitle": "Notification Templates",
-      "notificationTemplatesSubtitle": "Customize the notification texts. Use {{name}} for the customer's name and {{summary}} for the product name or inquiry type.",
+      "notificationTemplatesSubtitle": "Customize notification texts. Use {{name}} for the customer's name and {{summary}} for the product name or inquiry type.",
       "bookingTemplateLabel": "New Booking Template",
       "inquiryTemplateLabel": "New Inquiry Template",
       "saveNotificationTemplatesButton": "Save Templates",
       "notificationTemplatesSavedMessage": "Templates saved!",
       "prerequisiteMessageTitle": "Prerequisite Message for Returning Students",
-      "prerequisiteMessageSubtitle": "This message is shown to users who select 'I'm a Returning Student' before they see the packages.",
+      "prerequisiteMessageSubtitle": "This message will be shown to users who select 'I'm a Returning Student' before they see the packages.",
       "prerequisiteModalTitleLabel": "Modal Title",
       "prerequisiteModalMessageLabel": "Message Body",
-      "prerequisiteConfirmButtonLabel": "Confirmation Button Text",
+      "prerequisiteConfirmButtonLabel": "Confirm Button Text",
       "prerequisiteGoToIntroButtonLabel": "Redirect Button Text",
       "savePrerequisiteButton": "Save Message",
       "prerequisiteSavedMessage": "Message saved!",
@@ -735,14 +739,14 @@
     },
     "errors": {
       "DUPLICATE_BOOKING_ERROR": "This user is already registered for this class on this day and time.",
-      "UNPAID_BOOKING_EXISTS": "This user already has a pending booking. Please complete the payment before creating a new one.",
+      "UNPAID_BOOKING_EXISTS": "This user already has a pending pre-booking. Please complete the payment before creating a new one.",
       "SLOT_NOT_FOUND": "The original slot could not be found to reschedule.",
       "BOOKING_NOT_FOUND": "The booking could not be found.",
       "SLOT_FULL": "This class is already full."
+    },
+    "app": {
+        "loading": "Loading",
+        "soldOut": "Sold Out"
     }
-  },
-  "app": {
-    "loading": "Cargando",
-    "soldOut": "Agotado"
   }
 }
