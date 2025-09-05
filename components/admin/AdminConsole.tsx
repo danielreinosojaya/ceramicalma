@@ -217,16 +217,31 @@ export const AdminConsole: React.FC = () => {
       </header>
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-screen-xl mx-auto">
-          <div className="bg-brand-surface rounded-lg shadow-lg p-4 mb-6">
-            <div className="flex items-center space-x-2 flex-wrap gap-2">
-              <TabButton tab="products" icon={<CubeIcon className="w-4 h-4" />}>{t('admin.productsTab')}</TabButton>
-              <TabButton tab="calendar" icon={<CalendarIcon className="w-4 h-4" />}>{t('admin.calendarTab')}</TabButton>
-              <TabButton tab="schedule-settings" icon={<CalendarEditIcon className="w-4 h-4" />}>{t('admin.scheduleSettingsTab')}</TabButton>
-              <TabButton tab="inquiries" icon={<ChatBubbleLeftRightIcon className="w-4 h-4" />}>{t('admin.inquiriesTab')}</TabButton>
-              <TabButton tab="communications" icon={<PaperAirplaneIcon className="w-4 h-4" />}>{t('admin.communicationsTab')}</TabButton>
-              <TabButton tab="financials" icon={<ChartBarIcon className="w-4 h-4" />}>{t('admin.financialsTab')}</TabButton>
-              <TabButton tab="customers" icon={<UserGroupIcon className="w-4 h-4" />}>{t('admin.customersTab')}</TabButton>
-              <TabButton tab="settings" icon={<CogIcon className="w-4 h-4" />}>{t('admin.settingsTab')}</TabButton>
+          <div className="bg-brand-surface rounded-lg shadow-lg p-2 mb-6">
+            <div className="flex items-center flex-wrap gap-4 justify-center">
+                {/* Studio Management Group */}
+                <div className="flex items-center flex-wrap gap-2">
+                    <TabButton tab="products" icon={<CubeIcon className="w-4 h-4" />}>{t('admin.productsTab')}</TabButton>
+                    <TabButton tab="calendar" icon={<CalendarIcon className="w-4 h-4" />}>{t('admin.calendarTab')}</TabButton>
+                    <TabButton tab="schedule-settings" icon={<CalendarEditIcon className="w-4 h-4" />}>{t('admin.scheduleSettingsTab')}</TabButton>
+                </div>
+
+                <div className="border-l border-brand-border/60 h-6"></div>
+
+                {/* Business Management Group */}
+                <div className="flex items-center flex-wrap gap-2">
+                    <TabButton tab="inquiries" icon={<ChatBubbleLeftRightIcon className="w-4 h-4" />}>{t('admin.inquiriesTab')}</TabButton>
+                    <TabButton tab="communications" icon={<PaperAirplaneIcon className="w-4 h-4" />}>{t('admin.communicationsTab')}</TabButton>
+                    <TabButton tab="financials" icon={<ChartBarIcon className="w-4 h-4" />}>{t('admin.financialsTab')}</TabButton>
+                    <TabButton tab="customers" icon={<UserGroupIcon className="w-4 h-4" />}>{t('admin.customersTab')}</TabButton>
+                </div>
+                
+                <div className="border-l border-brand-border/60 h-6"></div>
+                
+                {/* System Group */}
+                <div className="flex items-center flex-wrap gap-2">
+                    <TabButton tab="settings" icon={<CogIcon className="w-4 h-4" />}>{t('admin.settingsTab')}</TabButton>
+                </div>
             </div>
           </div>
           <div className="bg-brand-surface rounded-lg shadow-lg p-6">
