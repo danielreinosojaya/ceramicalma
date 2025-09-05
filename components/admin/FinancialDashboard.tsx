@@ -115,6 +115,19 @@ const CapacityHealthView: React.FC = () => {
     );
 };
 
+// Robust timestamp formatting utility to prevent "Invalid Date" errors
+const formatTimestamp = (dateInput: Date | string | null | undefined, locale: string, options?: Intl.DateTimeFormatOptions): string => {
+    if (!dateInput) {
+        return '---';
+    }
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (isNaN(date.getTime())) {
+        return '---';
+    }
+    return date.toLocaleString(locale, options);
+};
+
+
 export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings: allBookings, onDataChange, setNavigateTo }) => {
     const { t, language } = useLanguage();
     const [activeTab, setActiveTab] = useState<FinancialTab>('summary');
@@ -271,7 +284,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
     const exportToCSV = () => {
         const headers = [t('admin.financialDashboard.date'), t('admin.financialDashboard.customer'), t('admin.financialDashboard.package'), t('admin.financialDashboard.amount')];
         const rows = summaryBookings.map(b => [
-            new Date(b.createdAt).toLocaleString(language),
+            formatTimestamp(b.createdAt, language),
             `${b.userInfo?.firstName} ${b.userInfo?.lastName}`,
             b.product?.name || 'N/A',
             b.price.toFixed(2)
@@ -383,7 +396,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
                             </div>
                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                                 <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-brand-text">{t('admin.financialDashboard.detailedReport')}</h3><button onClick={exportToCSV} className="text-sm font-semibold bg-brand-primary text-white py-1 px-3 rounded-md hover:bg-brand-accent transition-colors">{t('admin.financialDashboard.exportCSV')}</button></div>
-                                <div className="overflow-x-auto"><table className="min-w-full divide-y divide-gray-200"><thead className="bg-brand-background"><tr><th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.date')}</th><th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.customer')}</th><th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.package')}</th><th className="px-4 py-2 text-right text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.amount')}</th></tr></thead><tbody className="bg-white divide-y divide-gray-200">{summaryBookings.map(b => (<tr key={b.id}><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{new Date(b.createdAt).toLocaleDateString(language)}</td><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.userInfo?.firstName} {b.userInfo?.lastName}</td><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text text-right font-semibold">${b.price.toFixed(2)}</td></tr>))}</tbody></table></div>
+                                <div className="overflow-x-auto"><table className="min-w-full divide-y divide-gray-200"><thead className="bg-brand-background"><tr><th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.date')}</th><th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.customer')}</th><th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.package')}</th><th className="px-4 py-2 text-right text-xs font-medium text-brand-secondary uppercase">{t('admin.financialDashboard.amount')}</th></tr></thead><tbody className="bg-white divide-y divide-gray-200">{summaryBookings.map(b => (<tr key={b.id}><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatTimestamp(b.createdAt, language, { year: 'numeric', month: 'short', day: 'numeric'})}</td><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.userInfo?.firstName} {b.userInfo?.lastName}</td><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td><td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text text-right font-semibold">${b.price.toFixed(2)}</td></tr>))}</tbody></table></div>
                             </div>
                         </>
                     ) : (
@@ -446,7 +459,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ bookings
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {pendingBookingsToDisplay.length > 0 ? pendingBookingsToDisplay.map(b => (
                                         <tr key={b.id}>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{new Date(b.createdAt).toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric'})}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{formatTimestamp(b.createdAt, language, { year: 'numeric', month: 'short', day: 'numeric'})}</td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">
                                                 <div className="font-semibold">{b.userInfo?.firstName} {b.userInfo?.lastName}</div>
                                                 <div className="text-xs text-brand-secondary">{b.userInfo?.email}</div>

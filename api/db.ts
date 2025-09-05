@@ -35,7 +35,8 @@ const SCHEMA_SQL = `
         product JSONB,
         booking_code VARCHAR(50) UNIQUE,
         payment_details JSONB,
-        attendance JSONB
+        attendance JSONB,
+        billing_details JSONB
     );
 
     CREATE TABLE IF NOT EXISTS instructors (

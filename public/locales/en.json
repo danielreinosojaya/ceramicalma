@@ -175,7 +175,25 @@
     "paymentInstruction3": "Once validated, your booking will be confirmed!",
     "whatsappButton": "Contact via WhatsApp",
     "whatsappMessage": "Hi! I want to activate my booking. My code is {{code}}.",
-    "newBookingButton": "Start New Booking"
+    "newBookingButton": "Start New Booking",
+    "invoice": {
+      "requestButton": "Request Invoice",
+      "requestSubmittedButton": "Billing Info Received",
+      "title": "Billing Information",
+      "subtitle": "Please fill in the details to generate your invoice.",
+      "businessNameLabel": "Business Name",
+      "businessNamePlaceholder": "Your company's name",
+      "taxIdLabel": "Tax ID / VAT Number",
+      "taxIdPlaceholder": "Your company's tax identifier",
+      "addressLabel": "Billing Address",
+      "addressPlaceholder": "Full address for the invoice",
+      "emailLabel": "Billing Email",
+      "emailPlaceholder": "billing@company.com",
+      "submitButton": "Save Information",
+      "successTitle": "Information Saved!",
+      "successMessage": "We have received your billing details. The invoice will be sent to your email.",
+      "closeButton": "Close"
+    }
   },
   "pdf": {
     "title": "Booking Ticket",
@@ -558,37 +576,20 @@
       "backToList": "Back to customer list",
       "customerProfile": "Customer Profile",
       "lifetimeValue": "Lifetime Value (LTV)",
-      "totalClassesBooked": "Total Classes Booked",
       "lastBooking": "Last Booking",
-      "noShowRate": "No-Show Rate",
-      "subscriptions": "Subscriptions",
-      "noSubscriptions": "No subscriptions found for this customer.",
-      "purchasedOn": "Purchased",
-      "expiresOn": "Expires on {{date}}",
-      "statusActive": "Active",
-      "statusExpired": "Expired",
-      "activePackages": "Active Products",
-      "noActivePackages": "No active products with future classes.",
-      "scheduledClasses": "Scheduled Classes",
-      "classDate": "Class Date",
-      "noUpcomingClasses": "No upcoming classes scheduled.",
-      "progressText": "{{completed}} of {{total}} classes completed",
-      "bookingHistory": "Booking History",
       "bookingAndPrebookingHistory": "Booking and Pre-booking History",
-      "bookingCode": "Booking Code",
-      "paymentHistory": "Payment History",
-      "noPaymentsFound": "No payments found.",
       "date": "Date",
       "package": "Product",
       "status": "Status",
-      "amount": "Amount",
-      "progress": "Progress",
       "progressExpiry": "Progress / Expiry",
-      "classStatusCompleted": "Completed",
-      "classStatusUpcoming": "Upcoming",
       "completedOf": "{{completed}} of {{total}} completed",
       "allCustomersTab": "All Customers",
       "openStudioTab": "Open Studio",
+      "activePackages": "Active Packages",
+      "noActivePackages": "This customer has no active packages.",
+      "scheduledClasses": "Scheduled Classes",
+      "expiresOn": "Expires on {{date}}",
+      "instructorRole": "INSTRUCTOR",
       "openStudio": {
           "status": "Status",
           "startDate": "Start Date",
@@ -609,8 +610,18 @@
           "1left": "1 Class Left",
           "completed": "Package Completed"
       },
+      "actions": "Actions",
+      "editCustomer": "Edit Customer",
+      "deleteCustomer": "Delete Customer",
+      "acceptPayment": "Accept Payment",
+      "editBooking": "Edit Booking",
+      "deleteBooking": "Delete Booking",
       "deleteBookingTitle": "Delete Booking",
       "deleteBookingMessage": "Are you sure you want to permanently delete booking {{code}}? This action cannot be undone.",
+      "deleteCustomerConfirmTitle": "Delete Customer?",
+      "deleteCustomerConfirmMessage": "Are you sure you want to delete {{name}}? All their bookings and history will be permanently removed. This action cannot be undone.",
+      "editCustomerModalTitle": "Edit Customer Information",
+      "saveButton": "Save",
       "page": "Page",
       "of": "of",
       "previous": "Previous",
@@ -703,15 +714,15 @@
       "requiredFieldIndicator": "*"
     },
     "errors": {
-      "DUPLICATE_BOOKING_ERROR": "This user is already registered for this class on this day and time.",
-      "UNPAID_BOOKING_EXISTS": "This user already has a pending booking. Please complete the payment before creating a new one.",
-      "SLOT_NOT_FOUND": "The original slot could not be found to reschedule.",
-      "BOOKING_NOT_FOUND": "The booking could not be found.",
-      "SLOT_FULL": "This class is already full."
+      "DUPLICATE_BOOKING_ERROR": "Este usuario ya está registrado para esta clase en este día y hora.",
+      "UNPAID_BOOKING_EXISTS": "Este usuario ya tiene una reserva pendiente. Por favor, completa el pago antes de crear una nueva.",
+      "SLOT_NOT_FOUND": "El horario original no se pudo encontrar para reagendar.",
+      "BOOKING_NOT_FOUND": "La reserva no se pudo encontrar.",
+      "SLOT_FULL": "Esta clase ya está llena."
+    },
+    "app": {
+        "loading": "Cargando",
+        "soldOut": "Agotado"
     }
-  },
-  "app": {
-    "loading": "Cargando",
-    "soldOut": "Agotado"
   }
 }

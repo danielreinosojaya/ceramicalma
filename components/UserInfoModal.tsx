@@ -51,7 +51,7 @@ export const UserInfoModal: React.FC<UserInfoModalProps> = ({ onClose, onSubmit,
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
-    const [country, setCountry] = useState(COUNTRIES[0]);
+    const [country, setCountry] = useState(COUNTRIES.find(c => c.name === 'Ecuador') || COUNTRIES[0]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isPhoneFocused, setIsPhoneFocused] = useState(false);
     const [acceptedPolicies, setAcceptedPolicies] = useState(false);

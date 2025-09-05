@@ -1,193 +1,122 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import type { Customer, Booking, ClassPackage, TimeSlot, OpenStudioSubscription } from '../../types';
+import React from 'react';
+import type { Customer, Booking, Instructor, ClassPackage } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
-import * as dataService from '../../services/dataService';
+import { EditIcon } from '../icons/EditIcon';
+import { TrashIcon } from '../icons/TrashIcon';
 import { MailIcon } from '../icons/MailIcon';
 import { PhoneIcon } from '../icons/PhoneIcon';
-import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
-import { TrashIcon } from '../icons/TrashIcon';
-import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { ActivePackageCard } from './ActivePackageCard';
 
-const KPICard: React.FC<{ title: string; value: string | number; }> = ({ title, value }) => (
-    <div className="bg-brand-background p-4 rounded-lg">
-        <h3 className="text-sm font-semibold text-brand-secondary">{title}</h3>
-        <p className="text-2xl font-bold text-brand-text mt-1">{value}</p>
-    </div>
-);
+interface CustomerDetailViewProps {
+    customer: Customer;
+    instructors: Instructor[];
+    onBack: () => void;
+    onDataChange: () => void;
+    onEditBooking: (booking: Booking) => void;
+    onDeleteBooking: (booking: Booking) => void;
+}
 
-const getSlotDateTime = (slot: TimeSlot) => {
-    const time24h = new Date(`1970-01-01 ${slot.time}`).toTimeString().slice(0, 5);
-    const [hours, minutes] = time24h.split(':').map(Number);
-    const [year, month, day] = slot.date.split('-').map(Number);
-    return new Date(year, month - 1, day, hours, minutes);
+const SimpleBookingCard: React.FC<{
+    booking: Booking;
+    onEditBooking: (booking: Booking) => void;
+    onDeleteBooking: (booking: Booking) => void;
+}> = ({ booking, onEditBooking, onDeleteBooking }) => {
+    const { t, language } = useLanguage();
+    
+    const formatDate = (dateInput: Date | string) => {
+        const date = new Date(dateInput);
+        return date.toLocaleDateString(language, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
+    };
+    
+    return (
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h4 className="font-bold text-brand-text">{booking.product.name}</h4>
+                    <p className="text-xs text-brand-secondary">
+                        {t('admin.crm.bookedOn', { date: formatDate(booking.createdAt) })}
+                    </p>
+                    <p className="text-xs font-mono text-brand-accent mt-1">{booking.bookingCode}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                    <button onClick={() => onEditBooking(booking)} className="p-2 rounded-md text-brand-secondary hover:bg-gray-100" title={t('admin.crm.editBooking')}><EditIcon className="w-4 h-4" /></button>
+                    <button onClick={() => onDeleteBooking(booking)} className="p-2 rounded-md text-red-500 hover:bg-red-50" title={t('admin.crm.deleteBooking')}><TrashIcon className="w-4 h-4" /></button>
+                </div>
+            </div>
+            <div className="mt-2 pt-2 border-t border-gray-100">
+                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${booking.isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    {booking.isPaid ? t('admin.crm.paid') : t('admin.crm.unpaid')}
+                </span>
+                <span className="ml-2 font-semibold text-brand-text">${booking.price.toFixed(2)}</span>
+            </div>
+        </div>
+    );
 };
 
 
-export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => void; onDataChange: () => void; }> = ({ customer, onBack, onDataChange }) => {
-    const { t, language } = useLanguage();
-    
-    const [now, setNow] = useState(new Date());
-    const [bookingsPage, setBookingsPage] = useState(1);
-    const recordsPerPage = 5;
-    const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
-
-    useEffect(() => {
-        const timerId = setInterval(() => setNow(new Date()), 60000);
-        return () => clearInterval(timerId);
-    }, []);
-
-    const formatDate = (dateInput: Date | string | undefined | null) => {
-        if (!dateInput) return '---';
-        
-        // Uniformly handle Date objects and strings
-        const date = new Date(dateInput);
-
-        if (isNaN(date.getTime())) {
-            // Fallback for date-only strings if initial parsing fails
-            if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-                const dateOnly = new Date(`${dateInput}T00:00:00`);
-                if (!isNaN(dateOnly.getTime())) {
-                    return dateOnly.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
-                }
-            }
-            return '---'; // Return a neutral placeholder for invalid dates
-        }
-
-        return date.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' });
-    };
-
-    const handleTogglePaidStatus = async (booking: Booking) => {
-        if (booking.isPaid) {
-            if (window.confirm("Are you sure you want to mark this booking as UNPAID? This will remove the payment details.")) {
-               await dataService.markBookingAsUnpaid(booking.id);
-               onDataChange();
-            }
-        } else {
-            // In a real app, this would open a payment modal. For now, we manually set it.
-            await dataService.markBookingAsPaid(booking.id, { method: 'Manual', amount: booking.price });
-            onDataChange();
-        }
-    };
-    
-    const handleDeleteRequest = (booking: Booking) => {
-        setBookingToDelete(booking);
-    };
-
-    const handleDeleteConfirm = async () => {
-        if (bookingToDelete) {
-            await dataService.deleteBooking(bookingToDelete.id);
-            setBookingToDelete(null);
-            onDataChange();
-        }
-    };
-
-    const { userInfo, totalSpent, lastBookingDate, bookings } = customer;
-
-    const allBookingsSorted = useMemo(() => 
-        [...bookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-        [bookings]
-    );
-
-    const totalBookingPages = Math.ceil(allBookingsSorted.length / recordsPerPage);
-    const paginatedBookings = allBookingsSorted.slice((bookingsPage - 1) * recordsPerPage, bookingsPage * recordsPerPage);
-
-    const renderProgressExpiry = (booking: Booking) => {
-        if (booking.productType === 'CLASS_PACKAGE' && booking.product.type === 'CLASS_PACKAGE' && booking.slots && booking.slots.length > 0) {
-            const completed = booking.slots.filter(s => getSlotDateTime(s) < now).length;
-            const total = booking.product.classes;
-            return <span className="text-sm">{t('admin.crm.completedOf', { completed, total })}</span>
-        }
-        if (booking.productType === 'OPEN_STUDIO_SUBSCRIPTION' && booking.product.type === 'OPEN_STUDIO_SUBSCRIPTION' && booking.isPaid && booking.paymentDetails) {
-            const startDate = new Date(booking.paymentDetails.receivedAt);
-            const expiryDate = new Date(startDate);
-            const durationDays = booking.product.details.durationDays;
-            expiryDate.setDate(startDate.getDate() + durationDays);
-            const isActive = now < expiryDate;
-            return (
-                 <span className={`text-sm ${isActive ? 'text-brand-text' : 'text-gray-500'}`}>
-                    {t('admin.crm.expiresOn', { date: formatDate(expiryDate) })}
-                </span>
-            )
-        }
-        return <span className="text-sm text-gray-400">N/A</span>;
-    };
+export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({ customer, instructors, onBack, onEditBooking, onDeleteBooking }) => {
+    const { t } = useLanguage();
 
     return (
         <div className="animate-fade-in">
-            {bookingToDelete && (
-                <DeleteConfirmationModal
-                    isOpen={!!bookingToDelete}
-                    onClose={() => setBookingToDelete(null)}
-                    onConfirm={handleDeleteConfirm}
-                    title={t('admin.crm.deleteBookingTitle')}
-                    message={t('admin.crm.deleteBookingMessage', { code: bookingToDelete.bookingCode || 'N/A' })}
-                />
-            )}
             <button onClick={onBack} className="text-brand-secondary hover:text-brand-accent mb-4 transition-colors font-semibold">
                 &larr; {t('admin.crm.backToList')}
             </button>
-            <div className="bg-brand-background p-6 rounded-lg mb-6">
-                <h3 className="text-2xl font-serif text-brand-accent">{userInfo.firstName} {userInfo.lastName}</h3>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-brand-secondary">
-                    <a href={`mailto:${userInfo.email}`} className="flex items-center gap-2 hover:text-brand-accent"><MailIcon className="w-4 h-4" /> {userInfo.email}</a>
-                    <div className="flex items-center gap-2"><PhoneIcon className="w-4 h-4" /> {userInfo.countryCode} {userInfo.phone}</div>
-                </div>
-            </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                <KPICard title={t('admin.crm.lifetimeValue')} value={`$${totalSpent.toFixed(2)}`} />
-                <KPICard title={t('admin.crm.totalBookings')} value={customer.totalBookings} />
-                <KPICard title={t('admin.crm.lastBooking')} value={formatDate(lastBookingDate)} />
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="font-bold text-brand-text mb-4">{t('admin.crm.bookingAndPrebookingHistory')}</h3>
-                <div className="overflow-x-auto">
-                     {allBookingsSorted.length > 0 ? (
-                        <>
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-brand-background">
-                                    <tr>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.date')}</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.package')}</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.progressExpiry')}</th>
-                                        <th className="px-4 py-2 text-center text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.status')}</th>
-                                        <th className="px-4 py-2 text-right text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.productManager.actionsLabel')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {paginatedBookings.map(b => (
-                                        <tr key={b.id}>
-                                            <td className="px-4 py-2 whitespace-nowrap">
-                                                <div className="text-sm font-semibold text-brand-text">{formatDate(b.createdAt)}</div>
-                                                <div className="text-xs font-mono text-brand-secondary">{b.bookingCode || '---'}</div>
-                                            </td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-brand-text">{b.product?.name || 'N/A'}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap">{renderProgressExpiry(b)}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-center">
-                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${b.isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{b.isPaid ? t('admin.bookingModal.paidStatus') : t('admin.bookingModal.unpaidStatus')}</span>
-                                            </td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-right">
-                                                <div className="flex items-center justify-end">
-                                                    <button onClick={() => handleTogglePaidStatus(b)} title={t('admin.bookingModal.togglePaid')} className={`p-2 rounded-full transition-colors ${b.isPaid ? 'text-brand-success hover:bg-green-100' : 'text-gray-400 hover:bg-gray-200'}`}><CurrencyDollarIcon className="w-5 h-5"/></button>
-                                                    <button onClick={() => handleDeleteRequest(b)} title="Delete Booking" className="p-2 rounded-full text-red-500 hover:bg-red-100"><TrashIcon className="w-5 h-5" /></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                             {totalBookingPages > 1 && (
-                                <div className="mt-4 flex justify-between items-center text-sm">
-                                    <button onClick={() => setBookingsPage(p => Math.max(1, p - 1))} disabled={bookingsPage === 1} className="font-semibold disabled:text-gray-400">&larr; {t('admin.crm.previous')}</button>
-                                    <span>{t('admin.crm.page')} {bookingsPage} {t('admin.crm.of')} {totalBookingPages}</span>
-                                    <button onClick={() => setBookingsPage(p => Math.min(totalBookingPages, p + 1))} disabled={bookingsPage === totalBookingPages} className="font-semibold disabled:text-gray-400">{t('admin.crm.next')} &rarr;</button>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                         <p className="text-sm text-brand-secondary text-center py-4">{t('admin.crm.noCustomers')}</p>
-                    )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Left Column: Customer Info */}
+                <div className="md:col-span-1 space-y-6">
+                    <div className="bg-white p-6 rounded-2xl shadow-subtle border border-brand-border/50">
+                        <h2 className="text-2xl font-bold text-brand-text">{customer.userInfo.firstName} {customer.userInfo.lastName}</h2>
+                        <div className="mt-4 space-y-2 text-sm">
+                            <p className="flex items-center gap-3 text-brand-secondary">
+                                <MailIcon className="w-4 h-4 flex-shrink-0" />
+                                <a href={`mailto:${customer.userInfo.email}`} className="text-brand-accent hover:underline break-all">{customer.userInfo.email}</a>
+                            </p>
+                            <p className="flex items-center gap-3 text-brand-secondary">
+                                <PhoneIcon className="w-4 h-4 flex-shrink-0" />
+                                <span>{customer.userInfo.countryCode} {customer.userInfo.phone}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl shadow-subtle border border-brand-border/50">
+                        <h3 className="font-bold text-brand-text mb-3">{t('admin.crm.statistics')}</h3>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-baseline">
+                                <span className="text-sm font-semibold text-brand-secondary">{t('admin.crm.totalBookings')}</span>
+                                <span className="font-bold text-lg text-brand-text">{customer.totalBookings}</span>
+                            </div>
+                             <div className="flex justify-between items-baseline">
+                                <span className="text-sm font-semibold text-brand-secondary">{t('admin.crm.totalSpent')}</span>
+                                <span className="font-bold text-lg text-brand-text">${customer.totalSpent.toFixed(2)}</span>
+                            </div>
+                             <div className="flex justify-between items-baseline">
+                                <span className="text-sm font-semibold text-brand-secondary">{t('admin.crm.lastBooking')}</span>
+                                <span className="font-semibold text-sm text-brand-text">{new Date(customer.lastBookingDate).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Column: Bookings */}
+                <div className="md:col-span-2">
+                    <h3 className="text-xl font-bold text-brand-text mb-4">{t('admin.crm.bookingHistory')}</h3>
+                    <div className="space-y-4">
+                        {customer.bookings.length > 0 ? customer.bookings.map(booking => {
+                            if (booking.product.type === 'CLASS_PACKAGE') {
+                                return <ActivePackageCard key={booking.id} booking={booking as Booking & { product: ClassPackage }} instructors={instructors} />;
+                            }
+                            return <SimpleBookingCard key={booking.id} booking={booking} onEditBooking={onEditBooking} onDeleteBooking={onDeleteBooking} />;
+                        }) : (
+                            <div className="text-center py-12 text-brand-secondary bg-brand-background rounded-lg">
+                                <p>{t('admin.crm.noBookings')}</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

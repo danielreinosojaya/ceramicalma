@@ -6,7 +6,7 @@ import type {
     Product, Booking, ScheduleOverrides, Notification, Announcement, Instructor, 
     ConfirmationMessage, ClassCapacity, CapacityMessageSettings, UITexts, FooterInfo, 
     GroupInquiry, AddBookingResult, PaymentDetails, AttendanceStatus,
-    InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo, BankDetails, TimeSlot, ClientNotification
+    InquiryStatus, DayKey, AvailableSlot, AutomationSettings, UserInfo, BankDetails, TimeSlot, ClientNotification, BillingDetails
 } from '../types.js';
 import { 
     DEFAULT_PRODUCTS, DEFAULT_AVAILABLE_SLOTS_BY_DAY, DEFAULT_INSTRUCTORS, 
@@ -236,6 +236,31 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
             break;
         case 'deleteBooking':
             await sql`DELETE FROM bookings WHERE id = ${body.bookingId}`;
+            break;
+        case 'addBillingDetails':
+            const { bookingId, details: billingDetails } = body;
+            await sql`UPDATE bookings SET billing_details = ${JSON.stringify(billingDetails)} WHERE id = ${bookingId}`;
+            break;
+        case 'updateCustomer':
+            const { email: oldEmail, userInfo: updatedUserInfo } = body;
+            // Update user_info in all bookings for this customer
+            const { rows: customerBookings } = await sql`SELECT id, user_info FROM bookings WHERE user_info->>'email' = ${oldEmail}`;
+            await sql`BEGIN`;
+            for (const booking of customerBookings) {
+                const newInfo = { ...booking.user_info, ...updatedUserInfo };
+                await sql`UPDATE bookings SET user_info = ${JSON.stringify(newInfo)} WHERE id = ${booking.id}`;
+            }
+            // Also update inquiries if they exist
+            await sql`UPDATE inquiries SET name = ${`${updatedUserInfo.firstName} ${updatedUserInfo.lastName}`}, email = ${updatedUserInfo.email}, phone = ${updatedUserInfo.phone}, country_code = ${updatedUserInfo.countryCode} WHERE email = ${oldEmail}`;
+            await sql`COMMIT`;
+            break;
+        case 'deleteCustomer':
+            const { email: emailToDelete } = body;
+            await sql`BEGIN`;
+            // This is a hard delete, it removes all related records
+            await sql`DELETE FROM bookings WHERE user_info->>'email' = ${emailToDelete}`;
+            await sql`DELETE FROM inquiries WHERE email = ${emailToDelete}`;
+            await sql`COMMIT`;
             break;
         case 'removeBookingSlot':
             const { bookingId: removeId, slotToRemove } = body;

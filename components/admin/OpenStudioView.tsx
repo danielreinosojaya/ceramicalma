@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Booking, OpenStudioSubscription } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
+import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
+import { EditIcon } from '../icons/EditIcon';
+import { TrashIcon } from '../icons/TrashIcon';
 
 // Define a consistent type for the status
 export type SubscriptionStatus = 'Active' | 'Expired' | 'Pending Payment';
@@ -13,16 +16,31 @@ export interface AugmentedOpenStudioSubscription extends Booking {
     expiryDate: Date | null;
 }
 
+// Robust timestamp formatting utility to prevent "Invalid Date" errors
+const formatTimestamp = (dateInput: Date | string | null | undefined, locale: string): string => {
+    if (!dateInput) {
+        return '---';
+    }
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (isNaN(date.getTime())) {
+        return '---';
+    }
+    return date.toLocaleString(locale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
 // Countdown Timer Component: Calculates and displays remaining time
 const CountdownTimer: React.FC<{ expiryDate: Date | null }> = ({ expiryDate }) => {
     const { t } = useLanguage();
 
     const calculateTimeLeft = useCallback(() => {
-        if (!expiryDate) {
-            return null;
-        }
+        if (!expiryDate) return null;
         const difference = +new Date(expiryDate) - +new Date();
-        
         if (difference > 0) {
             return {
                 days: Math.floor(difference / (1000 * 60 * 60 * 24)),
@@ -37,22 +55,14 @@ const CountdownTimer: React.FC<{ expiryDate: Date | null }> = ({ expiryDate }) =
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
     useEffect(() => {
-        // No need to run timer if it's already expired
         if (!timeLeft || (timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes === 0 && timeLeft.seconds === 0)) {
             return;
         }
-
-        const timer = setInterval(() => {
-            setTimeLeft(calculateTimeLeft());
-        }, 1000);
-
+        const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
         return () => clearInterval(timer);
     }, [calculateTimeLeft, timeLeft]);
 
-    if (!timeLeft) {
-        return <span>-</span>;
-    }
-
+    if (!timeLeft) return <span>-</span>;
     const pad = (num: number) => num.toString().padStart(2, '0');
 
     return (
@@ -67,38 +77,17 @@ const CountdownTimer: React.FC<{ expiryDate: Date | null }> = ({ expiryDate }) =
 interface OpenStudioViewProps {
     bookings: Booking[];
     onNavigateToCustomer: (email: string) => void;
+    onAcceptPayment: (booking: Booking) => void;
+    onEditBooking: (booking: Booking) => void;
+    onDeleteBooking: (booking: Booking) => void;
 }
 
-// Robust timestamp formatting utility
-const formatTimestamp = (dateInput: Date | string | null | undefined): string => {
-    if (!dateInput) {
-        return '---';
-    }
-
-    // Ensure we are working with a Date object
-    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
-
-    // Validate the date object
-    if (isNaN(date.getTime())) {
-        return '---'; // Return a neutral indicator for invalid dates, preventing "Invalid Date"
-    }
-
-    // Use toLocaleString for a more readable timestamp format
-    return date.toLocaleString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-};
-
-export const OpenStudioView: React.FC<OpenStudioViewProps> = ({ bookings, onNavigateToCustomer }) => {
-    const { t } = useLanguage();
+export const OpenStudioView: React.FC<OpenStudioViewProps> = ({ bookings, onNavigateToCustomer, onAcceptPayment, onEditBooking, onDeleteBooking }) => {
+    const { t, language } = useLanguage();
     const [now, setNow] = useState(new Date());
 
     useEffect(() => {
-        const timer = setInterval(() => setNow(new Date()), 1000 * 30); // Update "now" every 30s for status check
+        const timer = setInterval(() => setNow(new Date()), 1000 * 30);
         return () => clearInterval(timer);
     }, []);
 
@@ -113,15 +102,28 @@ export const OpenStudioView: React.FC<OpenStudioViewProps> = ({ bookings, onNavi
             let expiryDate: Date | null = null;
 
             if (booking.isPaid && booking.paymentDetails?.receivedAt) {
-                startDate = new Date(booking.paymentDetails.receivedAt);
-                expiryDate = new Date(startDate);
-                // Precisely add the duration in milliseconds to account for the exact payment time
-                expiryDate.setMilliseconds(expiryDate.getMilliseconds() + booking.product.details.durationDays * 24 * 60 * 60 * 1000);
-                status = now < expiryDate ? 'Active' : 'Expired';
+                const potentialStartDate = new Date(booking.paymentDetails.receivedAt);
+                if (!isNaN(potentialStartDate.getTime())) {
+                    startDate = potentialStartDate;
+                    expiryDate = new Date(startDate.getTime());
+                    expiryDate.setTime(startDate.getTime() + booking.product.details.durationDays * 24 * 60 * 60 * 1000);
+                    status = now < expiryDate ? 'Active' : 'Expired';
+                } else {
+                    status = 'Expired';
+                }
             }
 
             return { ...booking, status, startDate, expiryDate };
-        }).sort((a, b) => (b.startDate?.getTime() || 0) - (a.startDate?.getTime() || 0));
+        }).sort((a, b) => {
+            const statusOrder: Record<SubscriptionStatus, number> = { 'Active': 1, 'Pending Payment': 2, 'Expired': 3 };
+            if (statusOrder[a.status] !== statusOrder[b.status]) {
+                return statusOrder[a.status] - statusOrder[b.status];
+            }
+            if (a.status === 'Active') {
+                return (a.expiryDate?.getTime() || 0) - (b.expiryDate?.getTime() || 0);
+            }
+            return (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
+        });
     }, [bookings, now]);
     
     const STATUS_COLORS: Record<SubscriptionStatus, string> = {
@@ -140,6 +142,7 @@ export const OpenStudioView: React.FC<OpenStudioViewProps> = ({ bookings, onNavi
                         <th className="px-6 py-3 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.openStudio.startDate')}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.openStudio.remainingTime')}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.openStudio.purchaseDate')}</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-brand-secondary uppercase tracking-wider">{t('admin.crm.actions')}</th>
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -155,18 +158,33 @@ export const OpenStudioView: React.FC<OpenStudioViewProps> = ({ bookings, onNavi
                                 </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-text">
-                                {formatTimestamp(sub.startDate)}
+                                {formatTimestamp(sub.startDate, language)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                                {sub.status === 'Active' ? <CountdownTimer expiryDate={sub.expiryDate} /> : <span className="text-sm text-gray-400">---</span>}
+                                {sub.status === 'Active' ? <CountdownTimer expiryDate={sub.expiryDate} /> : '---'}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-secondary">
-                                {formatTimestamp(sub.createdAt)}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-text">
+                                {formatTimestamp(sub.createdAt, language)}
+                            </td>
+                             <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                    {sub.status === 'Pending Payment' && (
+                                        <button onClick={(e) => { e.stopPropagation(); onAcceptPayment(sub); }} className="p-2 rounded-md text-green-600 hover:bg-green-100" title={t('admin.crm.acceptPayment')}>
+                                            <CurrencyDollarIcon className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                    <button onClick={(e) => { e.stopPropagation(); onEditBooking(sub); }} className="p-2 rounded-md text-brand-secondary hover:text-brand-accent hover:bg-gray-100" title={t('admin.crm.editBooking')}>
+                                        <EditIcon className="w-5 h-5" />
+                                    </button>
+                                    <button onClick={(e) => { e.stopPropagation(); onDeleteBooking(sub); }} className="p-2 rounded-md text-red-500 hover:text-red-700 hover:bg-red-50" title={t('admin.crm.deleteBooking')}>
+                                        <TrashIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     )) : (
                         <tr>
-                            <td colSpan={5} className="text-center py-8 text-brand-secondary">
+                            <td colSpan={6} className="text-center py-10 text-brand-secondary">
                                 {t('admin.crm.openStudio.noSubscriptions')}
                             </td>
                         </tr>
