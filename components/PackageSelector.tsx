@@ -33,32 +33,32 @@ export const PackageSelector: React.FC<PackageSelectorProps> = ({ onSelect }) =>
             return (
               <div
                 key={openStudioPkg.id}
-                className="bg-[linear-gradient(145deg,_#4A4540_0%,_#5f5953_100%)] rounded-xl overflow-hidden transition-all duration-300 cursor-pointer flex flex-col shadow-subtle hover:shadow-[0_0_25px_rgba(204,188,178,0.2)] transform hover:-translate-y-1 group relative"
+                className="bg-brand-surface rounded-xl shadow-subtle hover:shadow-lifted transition-all duration-300 cursor-pointer flex flex-col transform hover:-translate-y-1 group"
                 onClick={() => onSelect(openStudioPkg)}
               >
-                {/* Watermark Icon */}
-                <KeyIcon className="w-48 h-48 text-brand-surface/5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 transition-transform duration-500 group-hover:scale-110" />
-
-                {/* Exclusivity Seal */}
-                <div className="absolute top-0 right-0 bg-black/30 text-white/80 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-bl-lg z-20">
-                    {t('admin.productManager.openStudioSubscription')}
-                </div>
-                
-                <div className="relative p-8 flex-grow flex flex-col text-left z-10">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-3xl font-semibold text-brand-surface">{openStudioPkg.name}</h3>
+                <div className="flex-grow flex">
+                  {/* Accent Panel */}
+                  <div className="w-1/4 bg-brand-primary bg-brushed-clay flex flex-col items-center justify-center p-4 rounded-l-xl">
+                    <KeyIcon className="w-12 h-12 text-white/80 transition-transform duration-300 group-hover:scale-110" />
                   </div>
-                  <p className="text-brand-surface/80 mt-2 text-sm flex-grow">{openStudioPkg.description}</p>
                   
-                  <div className="mt-auto pt-6 border-t border-brand-surface/20">
-                    <div className="text-left mb-4">
-                        <p className="text-5xl font-bold text-brand-surface">${openStudioPkg.price}</p>
-                        <p className="text-sm font-normal text-brand-surface/70 -mt-1">{t('packages.perMonth')}</p>
+                  {/* Main Content */}
+                  <div className="w-3/4 p-6 flex flex-col text-left">
+                     <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-brand-background text-brand-secondary self-start">
+                       {t('admin.productManager.openStudioSubscription')}
+                     </span>
+                    <h3 className="text-2xl font-semibold text-brand-text mt-2">{openStudioPkg.name}</h3>
+                    <p className="text-brand-secondary/90 mt-2 text-sm flex-grow">{openStudioPkg.description}</p>
+                    <div className="mt-4 pt-4 border-t border-brand-border/60">
+                      <p className="text-4xl font-bold text-brand-text">${openStudioPkg.price}<span className="text-base font-normal text-brand-secondary"> / {t('packages.perMonth')}</span></p>
                     </div>
-                    <button className="w-full bg-brand-surface text-brand-text font-bold py-3 px-5 rounded-lg group-hover:bg-brand-accent group-hover:text-white transition-colors duration-300">
+                  </div>
+                </div>
+                 {/* Footer Button */}
+                <div className="p-4 border-t border-brand-border/60">
+                   <button className="w-full border-2 border-brand-primary text-brand-primary font-bold py-2 px-5 rounded-lg group-hover:bg-brand-primary group-hover:text-white transition-colors duration-300">
                       {t('packages.selectSubscriptionButton')}
                     </button>
-                  </div>
                 </div>
               </div>
             );
