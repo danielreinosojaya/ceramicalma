@@ -15,7 +15,7 @@ import { CalendarIcon } from '../icons/CalendarIcon';
 import { CubeIcon } from '../icons/CubeIcon';
 import { CogIcon } from '../icons/CogIcon';
 import { SettingsManager } from './SettingsManager';
-import type { AdminTab, Notification, Product, Booking, GroupInquiry, Instructor, ScheduleOverrides, DayKey, AvailableSlot, ClassCapacity, CapacityMessageSettings, Announcement, AppData, BankDetails } from '../../types';
+import type { AdminTab, Notification, Product, Booking, GroupInquiry, Instructor, ScheduleOverrides, DayKey, AvailableSlot, ClassCapacity, CapacityMessageSettings, Announcement, AppData, BankDetails, InvoiceRequest } from '../../types';
 import { ScheduleSettingsManager } from './ScheduleSettingsManager';
 import { CalendarEditIcon } from '../icons/CalendarEditIcon';
 import { InquiryManager } from './InquiryManager';
@@ -24,6 +24,8 @@ import * as dataService from '../../services/dataService';
 import { SyncButton } from './SyncButton';
 import { ClientNotificationLog } from './ClientNotificationLog';
 import { PaperAirplaneIcon } from '../icons/PaperAirplaneIcon';
+import { DocumentTextIcon } from '../icons/DocumentTextIcon';
+import { InvoiceManager } from './InvoiceManager';
 
 interface NavigationState {
     tab: AdminTab;
@@ -40,6 +42,7 @@ interface AdminData {
   classCapacity: ClassCapacity;
   capacityMessages: CapacityMessageSettings;
   announcements: Announcement[];
+  invoiceRequests: InvoiceRequest[];
 }
 
 
@@ -64,7 +67,8 @@ export const AdminConsole: React.FC = () => {
       try {
           const [
               products, bookings, inquiries, instructors, availability, 
-              scheduleOverrides, classCapacity, capacityMessages, announcements
+              scheduleOverrides, classCapacity, capacityMessages, announcements,
+              invoiceRequests
           ] = await Promise.all([
               dataService.getProducts(),
               dataService.getBookings(),
@@ -74,11 +78,13 @@ export const AdminConsole: React.FC = () => {
               dataService.getScheduleOverrides(),
               dataService.getClassCapacity(),
               dataService.getCapacityMessageSettings(),
-              dataService.getAnnouncements()
+              dataService.getAnnouncements(),
+              dataService.getInvoiceRequests(),
           ]);
           setAdminData({ 
               products, bookings, inquiries, instructors, availability, 
-              scheduleOverrides, classCapacity, capacityMessages, announcements
+              scheduleOverrides, classCapacity, capacityMessages, announcements,
+              invoiceRequests
           });
       } catch (error) {
           console.error("Failed to fetch admin data", error);
@@ -110,6 +116,8 @@ export const AdminConsole: React.FC = () => {
         }
     } else if (notification.type === 'new_inquiry') {
         setNavigateTo({ tab: 'inquiries', targetId: notification.targetId });
+    } else if (notification.type === 'new_invoice_request') {
+        setNavigateTo({ tab: 'invoicing', targetId: notification.targetId });
     }
   };
 
@@ -149,6 +157,8 @@ export const AdminConsole: React.FC = () => {
             initialDate={weekStartDate || new Date()} 
             onBackToMonth={handleBackToMonth}
             {...appDataForScheduleManager}
+            invoiceRequests={adminData.invoiceRequests}
+            setNavigateTo={setNavigateTo}
             onDataChange={handleSync}
           />;
         }
@@ -161,17 +171,25 @@ export const AdminConsole: React.FC = () => {
             onDataChange={handleSync}
         />;
       case 'financials':
-        return <FinancialDashboard bookings={adminData.bookings} onDataChange={handleSync} setNavigateTo={setNavigateTo} />;
+        return <FinancialDashboard 
+                  bookings={adminData.bookings} 
+                  onDataChange={handleSync} 
+                  setNavigateTo={setNavigateTo}
+                  invoiceRequests={adminData.invoiceRequests}
+                />;
       case 'customers':
         return <CrmDashboard 
                   bookings={adminData.bookings} 
-                  instructors={adminData.instructors}
                   navigateToEmail={targetId} 
                   onDataChange={handleSync} 
-                  onNavigationComplete={handleNavigationComplete} 
+                  onNavigationComplete={handleNavigationComplete}
+                  invoiceRequests={adminData.invoiceRequests}
+                  setNavigateTo={setNavigateTo}
                 />;
       case 'inquiries':
         return <InquiryManager inquiries={adminData.inquiries} onDataChange={handleSync} navigateToId={targetId} />;
+      case 'invoicing':
+        return <InvoiceManager invoiceRequests={adminData.invoiceRequests} onDataChange={handleSync} navigateToId={targetId} />;
       case 'communications':
         return <ClientNotificationLog />;
       case 'settings':
@@ -217,31 +235,17 @@ export const AdminConsole: React.FC = () => {
       </header>
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-screen-xl mx-auto">
-          <div className="bg-brand-surface rounded-lg shadow-lg p-2 mb-6">
-            <div className="flex items-center flex-wrap gap-4 justify-center">
-                {/* Studio Management Group */}
-                <div className="flex items-center flex-wrap gap-2">
-                    <TabButton tab="products" icon={<CubeIcon className="w-4 h-4" />}>{t('admin.productsTab')}</TabButton>
-                    <TabButton tab="calendar" icon={<CalendarIcon className="w-4 h-4" />}>{t('admin.calendarTab')}</TabButton>
-                    <TabButton tab="schedule-settings" icon={<CalendarEditIcon className="w-4 h-4" />}>{t('admin.scheduleSettingsTab')}</TabButton>
-                </div>
-
-                <div className="border-l border-brand-border/60 h-6"></div>
-
-                {/* Business Management Group */}
-                <div className="flex items-center flex-wrap gap-2">
-                    <TabButton tab="inquiries" icon={<ChatBubbleLeftRightIcon className="w-4 h-4" />}>{t('admin.inquiriesTab')}</TabButton>
-                    <TabButton tab="communications" icon={<PaperAirplaneIcon className="w-4 h-4" />}>{t('admin.communicationsTab')}</TabButton>
-                    <TabButton tab="financials" icon={<ChartBarIcon className="w-4 h-4" />}>{t('admin.financialsTab')}</TabButton>
-                    <TabButton tab="customers" icon={<UserGroupIcon className="w-4 h-4" />}>{t('admin.customersTab')}</TabButton>
-                </div>
-                
-                <div className="border-l border-brand-border/60 h-6"></div>
-                
-                {/* System Group */}
-                <div className="flex items-center flex-wrap gap-2">
-                    <TabButton tab="settings" icon={<CogIcon className="w-4 h-4" />}>{t('admin.settingsTab')}</TabButton>
-                </div>
+          <div className="bg-brand-surface rounded-lg shadow-lg p-4 mb-6">
+            <div className="flex items-center space-x-2 flex-wrap gap-2">
+              <TabButton tab="products" icon={<CubeIcon className="w-4 h-4" />}>{t('admin.productsTab')}</TabButton>
+              <TabButton tab="calendar" icon={<CalendarIcon className="w-4 h-4" />}>{t('admin.calendarTab')}</TabButton>
+              <TabButton tab="schedule-settings" icon={<CalendarEditIcon className="w-4 h-4" />}>{t('admin.scheduleSettingsTab')}</TabButton>
+              <TabButton tab="inquiries" icon={<ChatBubbleLeftRightIcon className="w-4 h-4" />}>{t('admin.inquiriesTab')}</TabButton>
+              <TabButton tab="communications" icon={<PaperAirplaneIcon className="w-4 h-4" />}>{t('admin.communicationsTab')}</TabButton>
+              <TabButton tab="financials" icon={<ChartBarIcon className="w-4 h-4" />}>{t('admin.financialsTab')}</TabButton>
+              <TabButton tab="customers" icon={<UserGroupIcon className="w-4 h-4" />}>{t('admin.customersTab')}</TabButton>
+              <TabButton tab="invoicing" icon={<DocumentTextIcon className="w-4 h-4" />}>{t('admin.invoicingTab')}</TabButton>
+              <TabButton tab="settings" icon={<CogIcon className="w-4 h-4" />}>{t('admin.settingsTab')}</TabButton>
             </div>
           </div>
           <div className="bg-brand-surface rounded-lg shadow-lg p-6">

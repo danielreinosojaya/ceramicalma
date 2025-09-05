@@ -1,23 +1,24 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import type { Customer, Booking, ClassPackage, TimeSlot, UserInfo, EditableBooking, PaymentDetails, Instructor } from '../../types';
+import type { Customer, Booking, ClassPackage, TimeSlot, InvoiceRequest, AdminTab } from '../../types';
 import * as dataService from '../../services/dataService';
 import { useLanguage } from '../../context/LanguageContext';
 import { CustomerList } from './CustomerList';
 import { CustomerDetailView } from './CustomerDetailView';
 import { UserGroupIcon } from '../icons/UserGroupIcon';
 import { OpenStudioView } from './OpenStudioView';
-import { EditCustomerModal } from './EditCustomerModal';
-import { DeleteConfirmationModal } from './DeleteConfirmationModal';
-import { AcceptPaymentModal } from './AcceptPaymentModal';
-import { EditBookingModal } from './EditBookingModal';
 
+interface NavigationState {
+    tab: AdminTab;
+    targetId: string;
+}
 
 interface CrmDashboardProps {
     navigateToEmail?: string;
     bookings: Booking[];
-    instructors: Instructor[];
+    invoiceRequests: InvoiceRequest[];
     onDataChange: () => void;
     onNavigationComplete: () => void;
+    setNavigateTo: React.Dispatch<React.SetStateAction<NavigationState | null>>;
 }
 
 export type FilterType = 'all' | '1-left' | '2-left' | 'completed';
@@ -79,7 +80,7 @@ const getRemainingClassesInfo = (customer: Customer): RemainingClassesInfo | nul
 };
 
 
-const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, instructors, onDataChange, onNavigationComplete }) => {
+const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, invoiceRequests, onDataChange, onNavigationComplete, setNavigateTo }) => {
     const { t } = useLanguage();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -88,22 +89,14 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
     const [filterByClassesRemaining, setFilterByClassesRemaining] = useState<FilterType>('all');
     const [activeTab, setActiveTab] = useState<'all' | 'openStudio'>('all');
 
-    // Modal States
-    const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
-    const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
-    const [bookingToEdit, setBookingToEdit] = useState<Booking | null>(null);
-    const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
-    const [bookingToPay, setBookingToPay] = useState<Booking | null>(null);
-
-    const loadCustomers = useCallback(async () => {
-        const allBookings = await dataService.getBookings();
-        setCustomers(dataService.getCustomers(allBookings));
-    }, []);
+    const loadCustomers = useCallback(() => {
+        setCustomers(dataService.getCustomers(bookings));
+    }, [bookings]);
 
     useEffect(() => {
         loadCustomers();
         setLoading(false);
-    }, [loadCustomers, bookings]);
+    }, [loadCustomers]);
     
     useEffect(() => {
         if (navigateToEmail) {
@@ -123,47 +116,6 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
       }
     }, [bookings, selectedCustomer]);
 
-    // --- Modal Handlers ---
-    const handleEditCustomer = (customer: Customer) => setCustomerToEdit(customer);
-    const handleSaveCustomer = async (updatedUserInfo: UserInfo) => {
-        if (!customerToEdit) return;
-        await dataService.updateCustomer(customerToEdit.email, updatedUserInfo);
-        onDataChange();
-        setCustomerToEdit(null);
-    };
-    
-    const handleDeleteCustomer = (customer: Customer) => setCustomerToDelete(customer);
-    const handleConfirmDeleteCustomer = async () => {
-        if (!customerToDelete) return;
-        await dataService.deleteCustomer(customerToDelete.email);
-        onDataChange();
-        setCustomerToDelete(null);
-    };
-
-    const handleEditBooking = (booking: Booking) => setBookingToEdit(booking);
-    const handleSaveBooking = async (updatedData: EditableBooking) => {
-        if (!bookingToEdit) return;
-        await dataService.updateBooking({ ...bookingToEdit, ...updatedData });
-        onDataChange();
-        setBookingToEdit(null);
-    };
-    
-    const handleDeleteBooking = (booking: Booking) => setBookingToDelete(booking);
-    const handleConfirmDeleteBooking = async () => {
-        if (!bookingToDelete) return;
-        await dataService.deleteBooking(bookingToDelete.id);
-        setBookingToDelete(null);
-        onDataChange();
-    };
-    
-    const handleAcceptPayment = (booking: Booking) => setBookingToPay(booking);
-    const handleConfirmPayment = async (details: Omit<PaymentDetails, 'receivedAt'>) => {
-        if (bookingToPay) {
-            await dataService.markBookingAsPaid(bookingToPay.id, details);
-            onDataChange();
-            setBookingToPay(null);
-        }
-    };
 
     const augmentedAndFilteredCustomers = useMemo((): AugmentedCustomer[] => {
         const augmented = customers.map(c => ({
@@ -196,16 +148,20 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
         return filtered;
     }, [customers, searchTerm, filterByClassesRemaining]);
 
-    const handleSelectCustomer = (customer: Customer) => setSelectedCustomer(customer);
+    const handleSelectCustomer = (customer: Customer) => {
+        setSelectedCustomer(customer);
+    };
+    
     const handleNavigateToCustomer = (email: string) => {
         const customer = customers.find(c => c.userInfo.email === email);
         if (customer) {
             setSelectedCustomer(customer);
         }
     };
-    const handleBackToList = useCallback(() => {
+
+    const handleBackToList = () => {
         setSelectedCustomer(null);
-    }, []);
+    };
     
     const FilterButton: React.FC<{ filter: FilterType; children: React.ReactNode; }> = ({ filter, children }) => (
         <button
@@ -222,47 +178,6 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
 
     return (
         <div>
-             {customerToEdit && (
-                <EditCustomerModal 
-                    userInfo={customerToEdit.userInfo}
-                    onClose={() => setCustomerToEdit(null)}
-                    onSave={handleSaveCustomer}
-                />
-            )}
-            {customerToDelete && (
-                 <DeleteConfirmationModal
-                    isOpen={!!customerToDelete}
-                    onClose={() => setCustomerToDelete(null)}
-                    onConfirm={handleConfirmDeleteCustomer}
-                    title={t('admin.crm.deleteCustomerConfirmTitle')}
-                    message={t('admin.crm.deleteCustomerConfirmMessage', { name: `${customerToDelete.userInfo.firstName} ${customerToDelete.userInfo.lastName}`})}
-                />
-            )}
-            {bookingToEdit && (
-                <EditBookingModal 
-                    booking={bookingToEdit}
-                    onClose={() => setBookingToEdit(null)}
-                    onSave={handleSaveBooking}
-                />
-            )}
-            {bookingToDelete && (
-                 <DeleteConfirmationModal
-                    isOpen={!!bookingToDelete}
-                    onClose={() => setBookingToDelete(null)}
-                    onConfirm={handleConfirmDeleteBooking}
-                    title={t('admin.crm.deleteBookingTitle')}
-                    message={t('admin.crm.deleteBookingMessage', { code: bookingToDelete.bookingCode || 'N/A' })}
-                />
-            )}
-            {bookingToPay && (
-                <AcceptPaymentModal
-                    isOpen={!!bookingToPay}
-                    onClose={() => setBookingToPay(null)}
-                    onConfirm={handleConfirmPayment}
-                    booking={bookingToPay}
-                />
-            )}
-
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-2xl font-serif text-brand-text mb-2 flex items-center gap-3">
@@ -275,12 +190,11 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
 
             {selectedCustomer ? (
                 <CustomerDetailView 
-                    customer={selectedCustomer} 
-                    instructors={instructors}
-                    onBack={handleBackToList} 
-                    onDataChange={onDataChange} 
-                    onEditBooking={handleEditBooking}
-                    onDeleteBooking={handleDeleteBooking}
+                  customer={selectedCustomer} 
+                  onBack={handleBackToList} 
+                  onDataChange={onDataChange} 
+                  invoiceRequests={invoiceRequests}
+                  setNavigateTo={setNavigateTo}
                 />
             ) : (
               <>
@@ -319,23 +233,12 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
                                 <FilterButton filter="completed">{t('admin.crm.filters.completed')}</FilterButton>
                             </div>
                         </div>
-                        <CustomerList 
-                            customers={augmentedAndFilteredCustomers} 
-                            onSelectCustomer={handleSelectCustomer} 
-                            onEditCustomer={handleEditCustomer}
-                            onDeleteCustomer={handleDeleteCustomer}
-                        />
+                        <CustomerList customers={augmentedAndFilteredCustomers} onSelectCustomer={handleSelectCustomer} />
                     </div>
                 )}
                 
                 {activeTab === 'openStudio' && (
-                    <OpenStudioView 
-                        bookings={bookings} 
-                        onNavigateToCustomer={handleNavigateToCustomer}
-                        onAcceptPayment={handleAcceptPayment}
-                        onEditBooking={handleEditBooking}
-                        onDeleteBooking={handleDeleteBooking}
-                    />
+                    <OpenStudioView bookings={bookings} onNavigateToCustomer={handleNavigateToCustomer} />
                 )}
               </>
             )}

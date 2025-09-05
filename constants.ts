@@ -10,6 +10,7 @@ export const PALETTE_COLORS = [
 ];
 
 export const COUNTRIES = [
+    { name: 'Ecuador', code: '+593', flag: '🇪🇨' },
     { name: 'Peru', code: '+51', flag: '🇵🇪' },
     { name: 'Argentina', code: '+54', flag: '🇦🇷' },
     { name: 'Australia', code: '+61', flag: '🇦🇺' },
@@ -23,7 +24,6 @@ export const COUNTRIES = [
     { name: 'Colombia', code: '+57', flag: '🇨🇴' },
     { name: 'Costa Rica', code: '+506', flag: '🇨🇷' },
     { name: 'Denmark', code: '+45', flag: '🇩🇰' },
-    { name: 'Ecuador', code: '+593', flag: '🇪🇨' },
     { name: 'Finland', code: '+358', flag: '🇫🇮' },
     { name: 'France', code: '+33', flag: '🇫🇷' },
     { name: 'Germany', code: '+49', flag: '🇩🇪' },

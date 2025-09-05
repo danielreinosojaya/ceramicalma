@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from 'react';
 import type { Product, IntroductoryClass, EnrichedIntroClassSession, IntroClassSession, AppData } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -144,7 +142,7 @@ export const IntroClassWizard: React.FC<IntroClassWizardProps> = ({ product, ses
                                     onClick={() => !isFull && handleTimeSelect(session)}
                                     disabled={isFull}
                                     className={`relative w-full p-3 rounded-lg text-left transition-all duration-200 overflow-hidden flex flex-col items-start gap-2 ${
-                                        isSelected ? 'bg-brand-primary text-white shadow-md' : 'bg-white hover:shadow-subtle'
+                                        isSelected ? 'bg-brand-primary/10 ring-2 ring-offset-1 ring-brand-primary shadow-md' : 'bg-white hover:shadow-subtle'
                                     } ${isFull ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 >
                                      {isFull && (
@@ -152,7 +150,7 @@ export const IntroClassWizard: React.FC<IntroClassWizardProps> = ({ product, ses
                                             {t('app.soldOut')}
                                         </div>
                                     )}
-                                    <p className="font-semibold text-lg">{session.time}</p>
+                                    <p className={`font-semibold text-lg ${isSelected ? 'text-brand-primary' : 'text-brand-text'}`}>{session.time}</p>
                                     <div className="flex items-center gap-2 w-full justify-between">
                                         <InstructorTag instructorId={session.instructorId} instructors={appData.instructors} />
                                         <CapacityIndicator count={session.paidBookingsCount} max={session.capacity} capacityMessages={appData.capacityMessages} />
@@ -206,9 +204,13 @@ export const IntroClassWizard: React.FC<IntroClassWizardProps> = ({ product, ses
             </div>
 
             <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
-                 <button onClick={goBack} disabled={step === 'month'} className="text-brand-secondary font-semibold hover:underline disabled:opacity-50">
-                    {t('introClass.wizard.backButton')}
-                </button>
+                {step !== 'month' ? (
+                    <button onClick={goBack} className="text-brand-secondary font-semibold hover:underline">
+                        {t('introClass.wizard.backButton')}
+                    </button>
+                ) : (
+                    <div /> // Placeholder to keep the 'Continue' button to the right
+                )}
                  <button
                     onClick={handleConfirm}
                     disabled={!selectedTime}

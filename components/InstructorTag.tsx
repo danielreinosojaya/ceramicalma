@@ -1,6 +1,7 @@
-import React from 'react';
-import type { Instructor } from '@/types';
-import { PALETTE_COLORS } from '@/constants';
+
+import React, { useMemo } from 'react';
+import type { Instructor } from '../types';
+import { PALETTE_COLORS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 
 interface InstructorTagProps {
@@ -8,25 +9,31 @@ interface InstructorTagProps {
   instructors: Instructor[];
 }
 
+const colorMap = PALETTE_COLORS.reduce((acc, color) => {
+    acc[color.name] = { bg: color.bg };
+    return acc;
+}, {} as Record<string, { bg: string }>);
+const defaultColors = { bg: 'bg-gray-400' };
+
 export const InstructorTag: React.FC<InstructorTagProps> = ({ instructorId, instructors }) => {
   const { t } = useLanguage();
-  const instructor = instructors.find(i => i.id === instructorId);
+  const instructor = useMemo(() => {
+    return instructors.find(i => i.id === instructorId);
+  }, [instructorId, instructors]);
+
   if (!instructor) {
     return null;
   }
-
-  const color = PALETTE_COLORS.find(c => c.name === instructor.colorScheme) || PALETTE_COLORS.find(c => c.name === 'secondary');
-
-  const tagClasses = `inline-flex items-center text-xs font-bold rounded-full ${color?.bg} ${color?.text} overflow-hidden`;
+  
+  const color = colorMap[instructor.colorScheme]?.bg || defaultColors.bg;
 
   return (
-    <span className={tagClasses}>
-      <span className="bg-black/10 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
-        {t('admin.crm.instructorRole')}
-      </span>
-      <span className="pl-1.5 pr-2.5">
-        {instructor.name}
-      </span>
-    </span>
+    <div className="flex items-center gap-2">
+      <span className={`w-2 h-2 rounded-full ${color}`}></span>
+      <div>
+        <p className="text-xs font-medium text-brand-secondary leading-tight">{t('summary.instructorHeader')}</p>
+        <p className="text-sm font-semibold text-brand-text leading-tight">{instructor.name}</p>
+      </div>
+    </div>
   );
 };

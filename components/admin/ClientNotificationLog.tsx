@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { PaperAirplaneIcon } from '../icons/PaperAirplaneIcon';
 
 const NOTIFICATION_TYPE_OPTIONS: ClientNotificationType[] = ['PRE_BOOKING_CONFIRMATION', 'PAYMENT_RECEIPT', 'CLASS_REMINDER'];
+const ITEMS_PER_PAGE = 15;
 
 export const ClientNotificationLog: React.FC = () => {
     const { t, language } = useLanguage();
@@ -12,6 +13,7 @@ export const ClientNotificationLog: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<ClientNotificationType | 'all'>('all');
     const [isLoading, setIsLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         const loadNotifications = async () => {
@@ -24,6 +26,10 @@ export const ClientNotificationLog: React.FC = () => {
         };
         loadNotifications();
     }, []);
+    
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterType]);
 
     const filteredNotifications = useMemo(() => {
         return notifications.filter(n => {
@@ -33,6 +39,22 @@ export const ClientNotificationLog: React.FC = () => {
             return matchesSearch && matchesType;
         });
     }, [notifications, searchTerm, filterType]);
+
+    const totalPages = Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE);
+    const paginatedNotifications = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        return filteredNotifications.slice(startIndex, endIndex);
+    }, [filteredNotifications, currentPage]);
+
+    const handleNextPage = () => {
+        setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    };
+
+    const handlePrevPage = () => {
+        setCurrentPage(prev => Math.max(1, prev - 1));
+    };
+
 
     return (
         <div>
@@ -85,7 +107,7 @@ export const ClientNotificationLog: React.FC = () => {
                                     {t('app.loading')}...
                                 </td>
                             </tr>
-                        ) : filteredNotifications.length > 0 ? filteredNotifications.map((n) => (
+                        ) : paginatedNotifications.length > 0 ? paginatedNotifications.map((n) => (
                             <tr key={n.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-text">
                                     {new Date(n.createdAt).toLocaleString(language, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -113,6 +135,19 @@ export const ClientNotificationLog: React.FC = () => {
                     </tbody>
                 </table>
             </div>
+             {totalPages > 1 && (
+                <div className="mt-4 flex justify-between items-center text-sm">
+                    <button onClick={handlePrevPage} disabled={currentPage === 1} className="font-semibold text-brand-primary disabled:text-gray-400 disabled:cursor-not-allowed">
+                        &larr; {t('admin.crm.previous')}
+                    </button>
+                    <span className="text-brand-secondary font-semibold">
+                        {t('admin.crm.page')} {currentPage} {t('admin.crm.of')} {totalPages}
+                    </span>
+                    <button onClick={handleNextPage} disabled={currentPage >= totalPages} className="font-semibold text-brand-primary disabled:text-gray-400 disabled:cursor-not-allowed">
+                        {t('admin.crm.next')} &rarr;
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

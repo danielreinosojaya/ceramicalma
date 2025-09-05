@@ -47,25 +47,28 @@ export const InquiryManager: React.FC<InquiryManagerProps> = ({ navigateToId, in
         setExpandedInquiryId(prevId => (prevId === id ? null : id));
     };
 
-    const formatDate = (dateInput: string | Date | null | undefined, options: Intl.DateTimeFormatOptions) => {
+    const formatDate = (dateInput: string | Date | null | undefined, options: Intl.DateTimeFormatOptions): string => {
+        const notApplicableText = t('admin.inquiryManager.notApplicable') || 'N/A';
         if (!dateInput) {
-            return t('admin.inquiryManager.notApplicable') || 'N/A';
+            return notApplicableText;
         }
 
-        // Create a new Date object regardless of input type to handle both strings and Date objects.
-        const date = new Date(dateInput);
+        let date: Date;
 
-        // Check if the created date is valid.
+        // Handle date-only strings like "YYYY-MM-DD" which can be misinterpreted as UTC.
+        if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+            const [year, month, day] = dateInput.split('-').map(Number);
+            // Construct in local time zone by specifying parts
+            date = new Date(year, month - 1, day);
+        } else {
+            date = new Date(dateInput);
+        }
+
+        // Final check for validity
         if (isNaN(date.getTime())) {
-            // Attempt a fallback for date-only strings like "YYYY-MM-DD"
-            if(typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-                const dateOnly = new Date(`${dateInput}T00:00:00`);
-                 if (!isNaN(dateOnly.getTime())) {
-                     return dateOnly.toLocaleDateString(language, options);
-                 }
-            }
             return t('admin.inquiryManager.invalidDate') || 'Invalid Date';
         }
+
         return date.toLocaleDateString(language, options);
     };
 
