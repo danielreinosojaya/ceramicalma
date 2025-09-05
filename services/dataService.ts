@@ -209,17 +209,17 @@ export const getCustomers = (bookings: Booking[]): Customer[] => {
         customerMap.get(email)!.bookings.push(booking);
     }
     const customers: Customer[] = Array.from(customerMap.values()).map(data => {
-        const sortedBookings = data.bookings.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        const sortedBookings = data.bookings.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
         return {
             email: data.userInfo.email,
             userInfo: data.userInfo,
             bookings: sortedBookings,
             totalBookings: data.bookings.length,
             totalSpent: data.bookings.reduce((sum, b) => sum + (b.isPaid && typeof b.price === 'number' ? b.price : 0), 0),
-            lastBookingDate: sortedBookings.length > 0 ? sortedBookings[0].createdAt : new Date(0),
+            lastBookingDate: sortedBookings.length > 0 ? sortedBookings[0].createdAt : null,
         };
     });
-    return customers.sort((a, b) => b.lastBookingDate.getTime() - a.lastBookingDate.getTime());
+    return customers.sort((a, b) => (b.lastBookingDate?.getTime() || 0) - (a.lastBookingDate?.getTime() || 0));
 };
 
 const formatDateToYYYYMMDD = (d: Date): string => d.toISOString().split('T')[0];
