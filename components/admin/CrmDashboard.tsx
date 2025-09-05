@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import type { Customer, Booking, ClassPackage, TimeSlot } from '../../types';
+import type { Customer, Booking, ClassPackage, TimeSlot, InvoiceRequest, AdminTab } from '../../types';
 import * as dataService from '../../services/dataService';
 import { useLanguage } from '../../context/LanguageContext';
 import { CustomerList } from './CustomerList';
@@ -7,11 +7,18 @@ import { CustomerDetailView } from './CustomerDetailView';
 import { UserGroupIcon } from '../icons/UserGroupIcon';
 import { OpenStudioView } from './OpenStudioView';
 
+interface NavigationState {
+    tab: AdminTab;
+    targetId: string;
+}
+
 interface CrmDashboardProps {
     navigateToEmail?: string;
     bookings: Booking[];
+    invoiceRequests: InvoiceRequest[];
     onDataChange: () => void;
     onNavigationComplete: () => void;
+    setNavigateTo: React.Dispatch<React.SetStateAction<NavigationState | null>>;
 }
 
 export type FilterType = 'all' | '1-left' | '2-left' | 'completed';
@@ -73,7 +80,7 @@ const getRemainingClassesInfo = (customer: Customer): RemainingClassesInfo | nul
 };
 
 
-const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, onDataChange, onNavigationComplete }) => {
+const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, invoiceRequests, onDataChange, onNavigationComplete, setNavigateTo }) => {
     const { t } = useLanguage();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -182,7 +189,13 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
             </div>
 
             {selectedCustomer ? (
-                <CustomerDetailView customer={selectedCustomer} onBack={handleBackToList} onDataChange={onDataChange} />
+                <CustomerDetailView 
+                  customer={selectedCustomer} 
+                  onBack={handleBackToList} 
+                  onDataChange={onDataChange} 
+                  invoiceRequests={invoiceRequests}
+                  setNavigateTo={setNavigateTo}
+                />
             ) : (
               <>
                 <div className="border-b border-gray-200 mb-4">

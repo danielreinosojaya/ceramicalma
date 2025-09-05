@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import type { Instructor, Booking, IntroductoryClass, Product, EditableBooking, RescheduleSlotInfo, PaymentDetails, AppData } from '../../types';
+import type { Instructor, Booking, IntroductoryClass, Product, EditableBooking, RescheduleSlotInfo, PaymentDetails, AppData, InvoiceRequest, AdminTab } from '../../types';
 import * as dataService from '../../services/dataService';
 import { useLanguage } from '../../context/LanguageContext';
 import { DAY_NAMES, PALETTE_COLORS } from '@/constants';
@@ -10,6 +10,7 @@ import { DocumentDownloadIcon } from '../icons/DocumentDownloadIcon';
 import { AcceptPaymentModal } from './AcceptPaymentModal';
 import { EditBookingModal } from './EditBookingModal';
 import { RescheduleModal } from './RescheduleModal';
+import { InvoiceReminderModal } from './InvoiceReminderModal';
 
 const colorMap = PALETTE_COLORS.reduce((acc, color) => {
     acc[color.name] = { bg: color.bg.replace('bg-', ''), text: color.text.replace('text-', '') };
@@ -17,6 +18,10 @@ const colorMap = PALETTE_COLORS.reduce((acc, color) => {
 }, {} as Record<string, { bg: string, text: string }>);
 const defaultColorName = 'secondary';
 
+interface NavigationState {
+    tab: AdminTab;
+    targetId: string;
+}
 
 type EnrichedSlot = {
     time: string;
@@ -56,9 +61,11 @@ interface ScheduleManagerProps extends AppData {
     initialDate: Date;
     onBackToMonth: () => void;
     onDataChange: () => void;
+    invoiceRequests: InvoiceRequest[];
+    setNavigateTo: React.Dispatch<React.SetStateAction<NavigationState | null>>;
 }
 
-export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ initialDate, onBackToMonth, onDataChange, ...appData }) => {
+export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ initialDate, onBackToMonth, onDataChange, invoiceRequests, setNavigateTo, ...appData }) => {
     const { t, language } = useLanguage();
     const [currentDate, setCurrentDate] = useState(getWeekStartDate(initialDate));
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -72,6 +79,8 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ initialDate, o
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
     const [rescheduleInfo, setRescheduleInfo] = useState<RescheduleSlotInfo | null>(null);
+    const [isInvoiceReminderOpen, setIsInvoiceReminderOpen] = useState(false);
+    const [bookingIdForReminder, setBookingIdForReminder] = useState<string | null>(null);
 
      useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 60000); // Update every minute for the time indicator
@@ -156,6 +165,12 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ initialDate, o
         return appData.bookings.find(b => b.id === bookingToManageId);
     }, [bookingToManageId, appData.bookings]);
 
+    const bookingForReminder = useMemo(() => {
+        if (!bookingIdForReminder) return null;
+        return appData.bookings.find(b => b.id === bookingIdForReminder);
+    }, [bookingIdForReminder, appData.bookings]);
+
+
     const closeAllModals = () => {
         setIsDetailsModalOpen(false);
         setIsAcceptPaymentModalOpen(false);
@@ -164,6 +179,8 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ initialDate, o
         setModalData(null);
         setBookingToManageId(null);
         setRescheduleInfo(null);
+        setIsInvoiceReminderOpen(false);
+        setBookingIdForReminder(null);
     };
     
     const handleShiftClick = (date: string, slot: EnrichedSlot) => {
@@ -177,8 +194,17 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ initialDate, o
     };
 
     const handleAcceptPayment = (bookingId: string) => {
-        setBookingToManageId(bookingId);
-        setIsAcceptPaymentModalOpen(true);
+        const pendingInvoiceRequest = invoiceRequests.find(
+            req => req.bookingId === bookingId && req.status === 'Pending'
+        );
+
+        if (pendingInvoiceRequest) {
+            setBookingIdForReminder(bookingId);
+            setIsInvoiceReminderOpen(true);
+        } else {
+            setBookingToManageId(bookingId);
+            setIsAcceptPaymentModalOpen(true);
+        }
     };
     
     const handleConfirmPayment = async (details: Omit<PaymentDetails, 'receivedAt'>) => {
@@ -232,6 +258,24 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ initialDate, o
             closeAllModals();
             onDataChange();
         }
+    };
+
+    const handleGoToInvoicing = () => {
+        if (!bookingForReminder) return;
+        const request = invoiceRequests.find(req => req.bookingId === bookingForReminder.id);
+        if (request) {
+            setNavigateTo({ tab: 'invoicing', targetId: request.id });
+        }
+        closeAllModals();
+    };
+
+    const handleProceedWithPayment = () => {
+        if (bookingIdForReminder) {
+            setBookingToManageId(bookingIdForReminder);
+            setIsAcceptPaymentModalOpen(true);
+        }
+        setIsInvoiceReminderOpen(false);
+        setBookingIdForReminder(null);
     };
     
     const handleNextWeek = () => {
@@ -341,6 +385,14 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ initialDate, o
                 onSave={handleConfirmReschedule}
                 slotInfo={rescheduleInfo}
                 appData={appData}
+            />
+        )}
+        {isInvoiceReminderOpen && (
+            <InvoiceReminderModal
+                isOpen={isInvoiceReminderOpen}
+                onClose={closeAllModals}
+                onProceed={handleProceedWithPayment}
+                onGoToInvoicing={handleGoToInvoicing}
             />
         )}
 

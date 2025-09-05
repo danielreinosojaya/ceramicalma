@@ -252,6 +252,12 @@
         "filterPending": "Pending",
         "filterProcessed": "Processed"
     },
+    "invoiceReminderModal": {
+      "title": "Invoice Requested",
+      "message": "This customer has requested an invoice for their purchase. Remember to process it from the Invoicing module to comply with fiscal requirements.",
+      "proceedButton": "Proceed with Payment",
+      "goToInvoicingButton": "Go to Invoicing"
+    },
     "inquiryManager": {
       "title": "Event Inquiries",
       "subtitle": "Manage and track inquiries for private and group events.",

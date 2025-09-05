@@ -157,6 +157,8 @@ export const AdminConsole: React.FC = () => {
             initialDate={weekStartDate || new Date()} 
             onBackToMonth={handleBackToMonth}
             {...appDataForScheduleManager}
+            invoiceRequests={adminData.invoiceRequests}
+            setNavigateTo={setNavigateTo}
             onDataChange={handleSync}
           />;
         }
@@ -169,13 +171,20 @@ export const AdminConsole: React.FC = () => {
             onDataChange={handleSync}
         />;
       case 'financials':
-        return <FinancialDashboard bookings={adminData.bookings} onDataChange={handleSync} setNavigateTo={setNavigateTo} />;
+        return <FinancialDashboard 
+                  bookings={adminData.bookings} 
+                  onDataChange={handleSync} 
+                  setNavigateTo={setNavigateTo}
+                  invoiceRequests={adminData.invoiceRequests}
+                />;
       case 'customers':
         return <CrmDashboard 
                   bookings={adminData.bookings} 
                   navigateToEmail={targetId} 
                   onDataChange={handleSync} 
-                  onNavigationComplete={handleNavigationComplete} 
+                  onNavigationComplete={handleNavigationComplete}
+                  invoiceRequests={adminData.invoiceRequests}
+                  setNavigateTo={setNavigateTo}
                 />;
       case 'inquiries':
         return <InquiryManager inquiries={adminData.inquiries} onDataChange={handleSync} navigateToId={targetId} />;

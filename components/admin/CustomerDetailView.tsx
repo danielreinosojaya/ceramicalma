@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import type { Customer, Booking, ClassPackage, TimeSlot, OpenStudioSubscription } from '../../types';
+import type { Customer, Booking, ClassPackage, TimeSlot, OpenStudioSubscription, InvoiceRequest, AdminTab } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import * as dataService from '../../services/dataService';
 import { MailIcon } from '../icons/MailIcon';
@@ -7,6 +7,7 @@ import { PhoneIcon } from '../icons/PhoneIcon';
 import { CurrencyDollarIcon } from '../icons/CurrencyDollarIcon';
 import { TrashIcon } from '../icons/TrashIcon';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { InvoiceReminderModal } from './InvoiceReminderModal';
 
 const KPICard: React.FC<{ title: string; value: string | number; }> = ({ title, value }) => (
     <div className="bg-brand-background p-4 rounded-lg">
@@ -14,6 +15,11 @@ const KPICard: React.FC<{ title: string; value: string | number; }> = ({ title, 
         <p className="text-2xl font-bold text-brand-text mt-1">{value}</p>
     </div>
 );
+
+interface NavigationState {
+    tab: AdminTab;
+    targetId: string;
+}
 
 const getSlotDateTime = (slot: TimeSlot) => {
     const time24h = new Date(`1970-01-01 ${slot.time}`).toTimeString().slice(0, 5);
@@ -23,13 +29,21 @@ const getSlotDateTime = (slot: TimeSlot) => {
 };
 
 
-export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => void; onDataChange: () => void; }> = ({ customer, onBack, onDataChange }) => {
+export const CustomerDetailView: React.FC<{ 
+    customer: Customer; 
+    onBack: () => void; 
+    onDataChange: () => void;
+    invoiceRequests: InvoiceRequest[];
+    setNavigateTo: React.Dispatch<React.SetStateAction<NavigationState | null>>;
+}> = ({ customer, onBack, onDataChange, invoiceRequests, setNavigateTo }) => {
     const { t, language } = useLanguage();
     
     const [now, setNow] = useState(new Date());
     const [bookingsPage, setBookingsPage] = useState(1);
     const recordsPerPage = 5;
     const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
+    const [isInvoiceReminderOpen, setIsInvoiceReminderOpen] = useState(false);
+    const [bookingForReminder, setBookingForReminder] = useState<Booking | null>(null);
 
     useEffect(() => {
         const timerId = setInterval(() => setNow(new Date()), 60000);
@@ -55,9 +69,17 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                onDataChange();
             }
         } else {
-            // In a real app, this would open a payment modal. For now, we manually set it.
-            await dataService.markBookingAsPaid(booking.id, { method: 'Manual', amount: booking.price });
-            onDataChange();
+            const pendingInvoiceRequest = invoiceRequests.find(
+                req => req.bookingId === booking.id && req.status === 'Pending'
+            );
+
+            if (pendingInvoiceRequest) {
+                setBookingForReminder(booking);
+                setIsInvoiceReminderOpen(true);
+            } else {
+                await dataService.markBookingAsPaid(booking.id, { method: 'Cash', amount: booking.price });
+                onDataChange();
+            }
         }
     };
     
@@ -71,6 +93,25 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
             setBookingToDelete(null);
             onDataChange();
         }
+    };
+
+    const handleGoToInvoicing = () => {
+        if (!bookingForReminder) return;
+        const request = invoiceRequests.find(req => req.bookingId === bookingForReminder.id);
+        if (request) {
+            setNavigateTo({ tab: 'invoicing', targetId: request.id });
+        }
+        setIsInvoiceReminderOpen(false);
+        setBookingForReminder(null);
+    };
+
+    const handleProceedWithPayment = async () => {
+        if (bookingForReminder) {
+            await dataService.markBookingAsPaid(bookingForReminder.id, { method: 'Cash', amount: bookingForReminder.price });
+            onDataChange();
+        }
+        setIsInvoiceReminderOpen(false);
+        setBookingForReminder(null);
     };
 
     const { userInfo, totalSpent, lastBookingDate, bookings } = customer;
@@ -120,6 +161,14 @@ export const CustomerDetailView: React.FC<{ customer: Customer; onBack: () => vo
                     onConfirm={handleDeleteConfirm}
                     title={t('admin.crm.deleteBookingTitle')}
                     message={t('admin.crm.deleteBookingMessage', { code: bookingToDelete.bookingCode || 'N/A' })}
+                />
+            )}
+            {isInvoiceReminderOpen && (
+                <InvoiceReminderModal
+                    isOpen={isInvoiceReminderOpen}
+                    onClose={() => setIsInvoiceReminderOpen(false)}
+                    onProceed={handleProceedWithPayment}
+                    onGoToInvoicing={handleGoToInvoicing}
                 />
             )}
             <button onClick={onBack} className="text-brand-secondary hover:text-brand-accent mb-4 transition-colors font-semibold">

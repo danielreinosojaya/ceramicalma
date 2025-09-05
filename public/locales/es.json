@@ -265,6 +265,12 @@
         "filterPending": "Pendientes",
         "filterProcessed": "Procesadas"
     },
+    "invoiceReminderModal": {
+      "title": "Factura Solicitada",
+      "message": "Este cliente ha solicitado una factura para su compra. Recuerda procesarla desde el módulo de Facturación para cumplir con los requerimientos fiscales.",
+      "proceedButton": "Continuar con el Pago",
+      "goToInvoicingButton": "Ir a Facturación"
+    },
     "inquiryManager": {
       "title": "Consultas de Eventos",
       "subtitle": "Gestiona y haz seguimiento a las solicitudes para eventos privados y grupales.",
