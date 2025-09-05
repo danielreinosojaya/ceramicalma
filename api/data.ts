@@ -151,7 +151,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else if (req.method === 'POST') {
             await handlePost(req, res);
         } else {
-            res.setHeader('Allow', ['GET', 'POST']);
+            res.setHeader('Allow', ['GET, POST']);
             res.status(405).end(`Method ${req.method} Not Allowed`);
         }
     } catch (error) {
@@ -370,6 +370,26 @@ async function handleAction(action: string, req: VercelRequest, res: VercelRespo
             break;
         case 'updateGroupInquiry':
             await sql`UPDATE inquiries SET status = ${body.status} WHERE id = ${body.id}`;
+            break;
+        case 'checkInstructorUsage':
+            const { instructorId } = body;
+            const { rows: productUsage } = await sql`
+                SELECT 1 FROM products WHERE EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(scheduling_rules) AS rule
+                    WHERE (rule->>'instructorId')::int = ${instructorId}
+                ) OR EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(overrides) AS override,
+                    jsonb_array_elements(override->'sessions') AS session
+                    WHERE (session->>'instructorId')::int = ${instructorId}
+                ) LIMIT 1
+            `;
+            const { rows: bookingUsage } = await sql`
+                SELECT 1 FROM bookings WHERE EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(slots) AS slot
+                    WHERE (slot->>'instructorId')::int = ${instructorId}
+                ) LIMIT 1
+            `;
+            result = { hasUsage: productUsage.length > 0 || bookingUsage.length > 0 };
             break;
         case 'reassignAndDeleteInstructor':
             const { instructorIdToDelete, replacementInstructorId } = body;

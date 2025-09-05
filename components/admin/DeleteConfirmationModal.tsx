@@ -29,7 +29,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
             onClick={onConfirm}
             className="px-4 py-2 rounded-md text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
           >
-            {t('admin.packageManager.confirmDeleteButton')}
+            {t('admin.productManager.confirmDeleteButton')}
           </button>
         </div>
       </div>

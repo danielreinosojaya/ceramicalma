@@ -145,7 +145,8 @@ export const getInstructors = async (): Promise<Instructor[]> => {
 };
 export const updateInstructors = (instructors: Instructor[]): Promise<{ success: boolean }> => setData('instructors', instructors);
 export const reassignAnddeleteInstructor = (instructorIdToDelete: number, replacementInstructorId: number): Promise<{ success: boolean }> => postAction('reassignAndDeleteInstructor', { instructorIdToDelete, replacementInstructorId });
-export const deleteInstructor = (id: number): Promise<{ success: boolean, requiresReassignment: boolean }> => postAction('deleteInstructor', { id });
+export const deleteInstructor = (id: number): Promise<{ success: boolean }> => postAction('deleteInstructor', { id });
+export const checkInstructorUsage = (instructorId: number): Promise<{ hasUsage: boolean }> => postAction('checkInstructorUsage', { instructorId });
 
 
 // Inquiries
