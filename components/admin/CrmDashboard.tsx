@@ -203,7 +203,9 @@ const CrmDashboard: React.FC<CrmDashboardProps> = ({ navigateToEmail, bookings, 
             setSelectedCustomer(customer);
         }
     };
-    const handleBackToList = () => setSelectedCustomer(null);
+    const handleBackToList = useCallback(() => {
+        setSelectedCustomer(null);
+    }, []);
     
     const FilterButton: React.FC<{ filter: FilterType; children: React.ReactNode; }> = ({ filter, children }) => (
         <button

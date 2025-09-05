@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { useState, useEffect } from 'react';
 import type { Product, OpenStudioSubscription, ClassPackage } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -35,10 +37,10 @@ export const PackageSelector: React.FC<PackageSelectorProps> = ({ onSelect }) =>
             return (
               <div
                 key={openStudioPkg.id}
-                className="bg-brand-premium-dark bg-brushed-clay rounded-xl overflow-hidden transition-all duration-300 cursor-pointer flex flex-col shadow-subtle hover:shadow-lifted transform hover:-translate-y-1 group"
+                className="bg-brand-text bg-brushed-clay rounded-xl overflow-hidden transition-all duration-300 cursor-pointer flex flex-col shadow-subtle hover:shadow-lifted transform hover:-translate-y-1 group"
                 onClick={() => onSelect(openStudioPkg)}
               >
-                <div className="relative p-6 flex-grow flex flex-col text-left text-brand-premium-light">
+                <div className="relative p-8 flex-grow flex flex-col text-left">
                   <div className="mb-4">
                     <span className="bg-brand-primary/20 text-brand-primary text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
                       {t('admin.productManager.openStudioSubscription')}
@@ -46,17 +48,17 @@ export const PackageSelector: React.FC<PackageSelectorProps> = ({ onSelect }) =>
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <KeyIcon className="w-6 h-6 text-brand-primary flex-shrink-0"/>
-                    <h3 className="text-3xl font-semibold">{openStudioPkg.name}</h3>
+                    <KeyIcon className="w-8 h-8 text-brand-accent flex-shrink-0"/>
+                    <h3 className="text-3xl font-semibold text-brand-surface">{openStudioPkg.name}</h3>
                   </div>
-                  <p className="text-brand-premium-light/80 mt-2 text-sm flex-grow">{openStudioPkg.description}</p>
+                  <p className="text-brand-surface/80 mt-2 text-sm flex-grow">{openStudioPkg.description}</p>
                   
-                  <div className="mt-auto pt-6 border-t border-brand-premium-light/20">
+                  <div className="mt-auto pt-6 border-t border-brand-surface/20">
                     <div className="text-left mb-4">
-                        <p className="text-4xl font-bold">${openStudioPkg.price}</p>
-                        <p className="text-sm font-normal text-brand-premium-light/70 -mt-1">{t('packages.perMonth')}</p>
+                        <p className="text-5xl font-bold text-brand-surface">${openStudioPkg.price}</p>
+                        <p className="text-sm font-normal text-brand-surface/70 -mt-1">{t('packages.perMonth')}</p>
                     </div>
-                    <button className="w-full bg-brand-premium-light text-brand-premium-dark font-bold py-3 px-5 rounded-lg hover:bg-brand-surface transition-colors duration-300">
+                    <button className="w-full bg-brand-surface text-brand-text font-bold py-3 px-5 rounded-lg hover:bg-brand-accent hover:text-white transition-colors duration-300">
                       {t('packages.selectSubscriptionButton')}
                     </button>
                   </div>
