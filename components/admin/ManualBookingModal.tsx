@@ -69,7 +69,10 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ onClose,
     
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [price, setPrice] = useState<number | string>('');
-    const [userInfo, setUserInfo] = useState<UserInfo>({ firstName: '', lastName: '', email: '', phone: '', countryCode: COUNTRIES[0].code });
+    
+    const defaultCountryCode = useMemo(() => COUNTRIES.find(c => c.name === 'Ecuador')?.code || COUNTRIES[0].code, []);
+    const [userInfo, setUserInfo] = useState<UserInfo>({ firstName: '', lastName: '', email: '', phone: '', countryCode: defaultCountryCode });
+
     const [isCreatingNewCustomer, setIsCreatingNewCustomer] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -127,7 +130,7 @@ export const ManualBookingModal: React.FC<ManualBookingModalProps> = ({ onClose,
 
     const resetCustomerSelection = () => {
         setSelectedCustomer(null);
-        setUserInfo({ firstName: '', lastName: '', email: '', phone: '', countryCode: COUNTRIES[0].code });
+        setUserInfo({ firstName: '', lastName: '', email: '', phone: '', countryCode: defaultCountryCode });
         setIsCreatingNewCustomer(false);
     };
 

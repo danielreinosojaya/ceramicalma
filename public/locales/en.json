@@ -571,6 +571,7 @@
       "noActivePackages": "This customer has no active packages.",
       "scheduledClasses": "Scheduled Classes",
       "expiresOn": "Expires on {{date}}",
+      "instructorRole": "INSTRUCTOR",
       "openStudio": {
           "status": "Status",
           "startDate": "Start Date",

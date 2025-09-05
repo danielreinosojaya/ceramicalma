@@ -572,7 +572,7 @@
       "customerProfile": "Perfil del Cliente",
       "lifetimeValue": "Valor Total (LTV)",
       "lastBooking": "Última Reserva",
-      "bookingAndPrebookingHistory": "Historial de Reservas y Pre-reservas",
+      "bookingHistory": "Historial de Reservas",
       "date": "Fecha",
       "package": "Producto",
       "status": "Estado",
@@ -584,6 +584,7 @@
       "noActivePackages": "El cliente no tiene paquetes activos.",
       "scheduledClasses": "Clases Programadas",
       "expiresOn": "Vence el {{date}}",
+      "instructorRole": "INSTRUCTORA",
       "openStudio": {
           "status": "Estado",
           "startDate": "Fecha de Inicio",
